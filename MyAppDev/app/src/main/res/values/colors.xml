@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <!-- 앱 브랜드 색상 -->
+    <color name="primary">#4361EE</color>
+    <color name="primary_dark">#3A0CA3</color>
+    <color name="primary_light">#E8F0FE</color>
+    <!-- 상태 색상 -->
+    <color name="recruiting">#2DC653</color>
+    <color name="done">#9E9E9E</color>
+    <!-- 기타 -->
+    <color name="surface">#FAFAFA</color>
+    <color name="on_surface">#1A1A1A</color>
+</resources>

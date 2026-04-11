@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 인터넷 권한 (Firebase, 이미지 로딩) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 갤러리에서 이미지 선택 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyAppDev">
+
+        <!-- 진입점: 로그인 상태에 따라 LoginActivity 또는 MainActivity로 분기 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- 인증 -->
+        <activity android:name=".auth.LoginActivity"
+            android:exported="false"/>
+        <activity android:name=".auth.RegisterActivity"
+            android:exported="false"/>
+        <activity android:name=".auth.ProfileSetupActivity"
+            android:exported="false"/>
+
+        <!-- 스터디 게시판 -->
+        <activity android:name=".board.StudyDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"/>
+        <activity android:name=".board.CreateStudyActivity"
+            android:exported="false"
+            android:parentActivityName=".board.StudyDetailActivity"/>
+
+        <!-- 채팅 -->
+        <activity android:name=".chat.ChatRoomActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="adjustResize"/>
+
+    </application>
+
+</manifest>

@@ -1,0 +1,66 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 공통 헬퍼 함수 ───────────────────────────────────────────
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isLoggedIn() && request.auth.uid == uid;
+    }
+    function isMemberOf(resource) {
+      return isLoggedIn() && request.auth.uid in resource.data.memberUids;
+    }
+
+    // ── 유저 프로필 ─────────────────────────────────────────────
+    match /users/{uid} {
+      // 누구나 프로필 읽기 가능 (닉네임 표시 등)
+      allow read: if isLoggedIn();
+      // 본인 프로필만 수정 가능
+      allow write: if isOwner(uid);
+    }
+
+    // ── 스터디 게시글 ────────────────────────────────────────────
+    match /studyPosts/{postId} {
+      // 로그인한 유저 모두 읽기 가능
+      allow read: if isLoggedIn();
+      // 로그인한 유저는 게시글 생성 가능
+      allow create: if isLoggedIn()
+                    && request.resource.data.authorUid == request.auth.uid;
+      // 수정: 작성자만 가능 (참여 신청은 memberUids, currentMembers 업데이트 허용)
+      allow update: if isLoggedIn() && (
+          // 작성자: 모든 필드 수정 가능
+          resource.data.authorUid == request.auth.uid
+          ||
+          // 참여자: memberUids, currentMembers, recruiting 만 수정 허용
+          (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['memberUids', 'currentMembers', 'recruiting', 'chatRoomId']))
+      );
+      // 삭제: 작성자만 가능
+      allow delete: if isOwner(resource.data.authorUid);
+    }
+
+    // ── 채팅방 ───────────────────────────────────────────────────
+    match /chatRooms/{roomId} {
+      // 채팅방 멤버만 읽기/수정 가능
+      allow read, update: if isMemberOf(resource);
+      // 로그인한 유저는 채팅방 생성 가능
+      allow create: if isLoggedIn()
+                    && request.auth.uid in request.resource.data.memberUids;
+
+      // ── 메시지 서브컬렉션 ────────────────────────────────────
+      match /messages/{messageId} {
+        // 채팅방 멤버만 메시지 읽기/쓰기 가능
+        allow read: if isLoggedIn()
+                    && request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(roomId)).data.memberUids;
+        allow create: if isLoggedIn()
+                      && request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(roomId)).data.memberUids
+                      && request.resource.data.senderUid == request.auth.uid;
+        // 메시지 수정/삭제 불가 (채팅 무결성)
+        allow update, delete: if false;
+      }
+    }
+  }
+}
