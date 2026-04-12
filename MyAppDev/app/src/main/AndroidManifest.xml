@@ -15,6 +15,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:localeConfig="@xml/locale_config"
         android:theme="@style/Theme.MyAppDev">
 
         <!-- 진입점: 로그인 상태에 따라 LoginActivity 또는 MainActivity로 분기 -->
@@ -41,7 +42,8 @@
             android:parentActivityName=".MainActivity"/>
         <activity android:name=".board.CreateStudyActivity"
             android:exported="false"
-            android:parentActivityName=".board.StudyDetailActivity"/>
+            android:parentActivityName=".board.StudyDetailActivity"
+            android:windowSoftInputMode="adjustResize"/>
 
         <!-- 채팅 -->
         <activity android:name=".chat.ChatRoomActivity"

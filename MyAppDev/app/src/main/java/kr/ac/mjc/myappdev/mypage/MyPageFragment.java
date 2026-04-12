@@ -2,6 +2,7 @@ package kr.ac.mjc.myappdev.mypage;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +15,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +27,8 @@ import kr.ac.mjc.myappdev.model.User;
 import kr.ac.mjc.myappdev.util.FirebaseUtil;
 
 public class MyPageFragment extends Fragment {
+
+    private static final String TAG = "MyPageFragment";
 
     private FragmentMyPageBinding binding;
     private MyStudyAdapter myPostsAdapter;
@@ -54,7 +56,6 @@ public class MyPageFragment extends Fragment {
     }
 
     private void setupAdapters() {
-        // 내가 작성한 글 목록
         myPostsAdapter = new MyStudyAdapter(post -> {
             Intent intent = new Intent(requireContext(), StudyDetailActivity.class);
             intent.putExtra("postId", post.getPostId());
@@ -64,7 +65,6 @@ public class MyPageFragment extends Fragment {
         binding.rvMyPosts.setAdapter(myPostsAdapter);
         binding.rvMyPosts.setNestedScrollingEnabled(false);
 
-        // 참여 중인 스터디 목록
         joinedStudyAdapter = new MyStudyAdapter(post -> {
             Intent intent = new Intent(requireContext(), StudyDetailActivity.class);
             intent.putExtra("postId", post.getPostId());
@@ -89,14 +89,15 @@ public class MyPageFragment extends Fragment {
                                 .circleCrop()
                                 .into(binding.ivProfile);
                     }
-                });
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "프로필 로드 실패", e));
     }
 
     private void loadMyPosts() {
         String uid = FirebaseUtil.getCurrentUid();
+        // orderBy 없이 조회 후 메모리에서 정렬 (Firestore 복합 인덱스 불필요)
         FirebaseUtil.getStudyPostsRef()
                 .whereEqualTo("authorUid", uid)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(snapshots -> {
                     List<StudyPost> posts = new ArrayList<>();
@@ -105,17 +106,25 @@ public class MyPageFragment extends Fragment {
                         post.setPostId(doc.getId());
                         posts.add(post);
                     }
+                    // 최신순 정렬
+                    posts.sort((a, b) -> {
+                        if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+                        return b.getCreatedAt().compareTo(a.getCreatedAt());
+                    });
                     myPostsAdapter.submitList(posts);
                     binding.tvMyPostsEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "내가 만든 스터디 로드 실패", e);
+                    Toast.makeText(requireContext(), "스터디 목록을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                 });
     }
 
     private void loadJoinedStudies() {
         String uid = FirebaseUtil.getCurrentUid();
-        // 내가 멤버인 스터디 (내가 작성한 것 포함)
+        // orderBy 없이 조회 후 메모리에서 정렬 (Firestore 복합 인덱스 불필요)
         FirebaseUtil.getStudyPostsRef()
                 .whereArrayContains("memberUids", uid)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(snapshots -> {
                     List<StudyPost> posts = new ArrayList<>();
@@ -124,8 +133,17 @@ public class MyPageFragment extends Fragment {
                         post.setPostId(doc.getId());
                         posts.add(post);
                     }
+                    // 최신순 정렬
+                    posts.sort((a, b) -> {
+                        if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+                        return b.getCreatedAt().compareTo(a.getCreatedAt());
+                    });
                     joinedStudyAdapter.submitList(posts);
                     binding.tvJoinedEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "참여 중인 스터디 로드 실패", e);
+                    Toast.makeText(requireContext(), "스터디 목록을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                 });
     }
 
