@@ -29,6 +29,7 @@ public class StudyBoardFragment extends Fragment {
 
     private String selectedField    = "";
     private String selectedLocation = "";
+    private boolean filtersInitialized;
 
     // 필터 옵션 (실제 앱에서는 서버에서 받거나 strings.xml로 관리)
     private static final String[] FIELDS    = {"전체", "코딩", "취업", "자격증", "영어", "공무원", "기타"};
@@ -85,6 +86,9 @@ public class StudyBoardFragment extends Fragment {
                 } else {
                     selectedLocation = pos == 0 ? "" : LOCATIONS[pos];
                 }
+                if (!filtersInitialized) {
+                    return;
+                }
                 loadPosts();
             }
             @Override
@@ -93,6 +97,7 @@ public class StudyBoardFragment extends Fragment {
 
         binding.spinnerField.setOnItemSelectedListener(filterListener);
         binding.spinnerLocation.setOnItemSelectedListener(filterListener);
+        filtersInitialized = true;
     }
 
     private void loadPosts() {
@@ -118,7 +123,10 @@ public class StudyBoardFragment extends Fragment {
             adapter.submitList(posts);
             binding.progressBar.setVisibility(View.GONE);
             binding.tvEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
-        }).addOnFailureListener(e -> binding.progressBar.setVisibility(View.GONE));
+        }).addOnFailureListener(e -> {
+            binding.progressBar.setVisibility(View.GONE);
+            binding.tvEmpty.setVisibility(View.VISIBLE);
+        });
     }
 
     @Override

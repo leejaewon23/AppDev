@@ -66,6 +66,9 @@ public class MyStudyAdapter extends RecyclerView.Adapter<MyStudyAdapter.ViewHold
             tvStatus.setText(post.isRecruiting() ? "모집 중" : "모집 완료");
             tvStatus.setTextColor(itemView.getContext().getResources().getColor(
                     post.isRecruiting() ? R.color.recruiting : R.color.done, null));
+            tvStatus.setBackgroundResource(post.isRecruiting()
+                    ? R.drawable.bg_status_recruiting
+                    : R.drawable.bg_status_done);
             itemView.setOnClickListener(v -> listener.onItemClick(post));
         }
     }

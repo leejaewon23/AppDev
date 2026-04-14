@@ -47,7 +47,12 @@ public class ChatRoom {
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
-    public List<String> getMemberUids() { return memberUids; }
+    public List<String> getMemberUids() {
+        if (memberUids == null) {
+            memberUids = new ArrayList<>();
+        }
+        return memberUids;
+    }
     public void setMemberUids(List<String> memberUids) { this.memberUids = memberUids; }
 
     public String getStudyPostId() { return studyPostId; }

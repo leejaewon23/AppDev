@@ -1,6 +1,5 @@
 package kr.ac.mjc.myappdev.board;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +10,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +53,9 @@ public class StudyAdapter extends RecyclerView.Adapter<StudyAdapter.ViewHolder> 
     public int getItemCount() { return posts.size(); }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvAuthor, tvMembers, tvField, tvLocation;
+        TextView tvTitle, tvAuthor, tvMembers, tvField, tvLocation, tvSummary;
         Chip chipStatus;
+        LinearProgressIndicator progressMembers;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -63,23 +64,31 @@ public class StudyAdapter extends RecyclerView.Adapter<StudyAdapter.ViewHolder> 
             tvMembers  = itemView.findViewById(R.id.tvMembers);
             tvField    = itemView.findViewById(R.id.tvField);
             tvLocation = itemView.findViewById(R.id.tvLocation);
+            tvSummary  = itemView.findViewById(R.id.tvSummary);
             chipStatus = itemView.findViewById(R.id.chipStatus);
+            progressMembers = itemView.findViewById(R.id.progressMembers);
         }
 
         void bind(StudyPost post, OnItemClickListener listener) {
-            Context ctx = itemView.getContext();
             tvTitle.setText(post.getTitle());
-            tvAuthor.setText(post.getAuthorNickname());
-            tvMembers.setText(post.getCurrentMembers() + "/" + post.getMaxMembers() + "명");
+            tvAuthor.setText(post.getAuthorNickname() + " 님이 만든 스터디");
+            tvMembers.setText(post.getCurrentMembers() + "/" + post.getMaxMembers() + "명 참여");
             tvField.setText(post.getField());
             tvLocation.setText(post.getLocation());
+            tvSummary.setText(post.getDescription());
+            int progress = post.getMaxMembers() == 0
+                    ? 0
+                    : Math.min(100, (post.getCurrentMembers() * 100) / post.getMaxMembers());
+            progressMembers.setProgress(progress);
 
             if (post.isRecruiting()) {
                 chipStatus.setText("모집 중");
                 chipStatus.setChipBackgroundColorResource(R.color.recruiting);
+                chipStatus.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.white));
             } else {
                 chipStatus.setText("모집 완료");
                 chipStatus.setChipBackgroundColorResource(R.color.done);
+                chipStatus.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.white));
             }
 
             itemView.setOnClickListener(v -> listener.onItemClick(post));

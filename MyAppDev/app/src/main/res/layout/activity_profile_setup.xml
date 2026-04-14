@@ -7,6 +7,7 @@
     android:padding="32dp">
 
     <TextView
+        android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="프로필 설정"
@@ -15,6 +16,7 @@
         android:layout_marginBottom="8dp"/>
 
     <TextView
+        android:id="@+id/tvSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="닉네임과 프로필 사진을 설정해 주세요"

@@ -52,7 +52,18 @@ public class MyPageFragment extends Fragment {
         loadMyPosts();
         loadJoinedStudies();
 
+        binding.btnEditProfile.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), ProfileEditActivity.class)));
         binding.btnLogout.setOnClickListener(v -> confirmLogout());
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (binding == null) {
+            return;
+        }
+        loadUserProfile();
     }
 
     private void setupAdapters() {
@@ -88,6 +99,8 @@ public class MyPageFragment extends Fragment {
                                 .load(user.getProfileImageUrl())
                                 .circleCrop()
                                 .into(binding.ivProfile);
+                    } else {
+                        binding.ivProfile.setImageResource(android.R.drawable.ic_menu_myplaces);
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "프로필 로드 실패", e));
@@ -112,10 +125,12 @@ public class MyPageFragment extends Fragment {
                         return b.getCreatedAt().compareTo(a.getCreatedAt());
                     });
                     myPostsAdapter.submitList(posts);
+                    binding.tvCreatedCount.setText(String.valueOf(posts.size()));
                     binding.tvMyPostsEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "내가 만든 스터디 로드 실패", e);
+                    binding.tvCreatedCount.setText("0");
                     Toast.makeText(requireContext(), "스터디 목록을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                 });
     }
@@ -139,10 +154,12 @@ public class MyPageFragment extends Fragment {
                         return b.getCreatedAt().compareTo(a.getCreatedAt());
                     });
                     joinedStudyAdapter.submitList(posts);
+                    binding.tvJoinedCount.setText(String.valueOf(posts.size()));
                     binding.tvJoinedEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "참여 중인 스터디 로드 실패", e);
+                    binding.tvJoinedCount.setText("0");
                     Toast.makeText(requireContext(), "스터디 목록을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                 });
     }

@@ -35,6 +35,8 @@
             android:exported="false"/>
         <activity android:name=".auth.ProfileSetupActivity"
             android:exported="false"/>
+        <activity android:name=".mypage.ProfileEditActivity"
+            android:exported="false"/>
 
         <!-- 스터디 게시판 -->
         <activity android:name=".board.StudyDetailActivity"

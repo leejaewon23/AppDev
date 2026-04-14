@@ -10,9 +10,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +29,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private String roomId;
     private String myNickname = "";
+    private boolean sendInFlight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +56,11 @@ public class ChatRoomActivity extends AppCompatActivity {
      */
     private void verifyMembershipThenLoad() {
         String myUid = FirebaseUtil.getCurrentUid();
+        if (myUid == null || roomId == null || roomId.isEmpty()) {
+            Toast.makeText(this, "채팅방 정보를 확인할 수 없습니다", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         FirebaseUtil.getChatRoomsRef().document(roomId).get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) { finish(); return; }
@@ -66,7 +72,10 @@ public class ChatRoomActivity extends AppCompatActivity {
                     }
                     loadNicknameThenSetup();
                 })
-                .addOnFailureListener(e -> finish());
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "채팅방 정보를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
     }
 
     private void loadNicknameThenSetup() {
@@ -78,6 +87,10 @@ public class ChatRoomActivity extends AppCompatActivity {
                     setupRecyclerView();
                     subscribeMessages();
                     binding.btnSend.setOnClickListener(v -> sendMessage());
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "프로필 정보를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                    finish();
                 });
     }
 
@@ -94,7 +107,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         messageListener = FirebaseUtil.getMessagesRef(roomId)
                 .orderBy("createdAt", Query.Direction.ASCENDING)
                 .addSnapshotListener((snapshots, e) -> {
-                    if (e != null || snapshots == null) return;
+                    if (e != null || snapshots == null) {
+                        Toast.makeText(this, "메시지를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     java.util.List<Message> msgs = new java.util.ArrayList<>();
                     for (var doc : snapshots) {
                         Message msg = doc.toObject(Message.class);
@@ -102,26 +118,38 @@ public class ChatRoomActivity extends AppCompatActivity {
                         msgs.add(msg);
                     }
                     adapter.submitList(msgs);
-                    binding.rvMessages.scrollToPosition(adapter.getItemCount() - 1);
+                    if (adapter.getItemCount() > 0) {
+                        binding.rvMessages.scrollToPosition(adapter.getItemCount() - 1);
+                    }
                 });
     }
 
     private void sendMessage() {
+        if (sendInFlight) {
+            return;
+        }
         String content = binding.etMessage.getText().toString().trim();
         if (TextUtils.isEmpty(content)) return;
 
+        setSendLoading(true);
         binding.etMessage.setText("");
 
         Message msg = new Message(roomId, FirebaseUtil.getCurrentUid(), myNickname, content);
-
-        // 서브컬렉션에 메시지 저장
-        FirebaseUtil.getMessagesRef(roomId).add(msg);
+        var messageRef = FirebaseUtil.getMessagesRef(roomId).document();
+        WriteBatch batch = FirebaseUtil.getFirestore().batch();
+        batch.set(messageRef, msg);
 
         // 채팅방 마지막 메시지 업데이트
         Map<String, Object> roomUpdate = new HashMap<>();
         roomUpdate.put("lastMessage", content);
         roomUpdate.put("lastMessageAt", Timestamp.now());
-        FirebaseUtil.getChatRoomsRef().document(roomId).update(roomUpdate);
+        batch.update(FirebaseUtil.getChatRoomsRef().document(roomId), roomUpdate);
+        batch.commit()
+                .addOnFailureListener(e -> {
+                    binding.etMessage.setText(content);
+                    Toast.makeText(this, "메시지 전송에 실패했습니다", Toast.LENGTH_SHORT).show();
+                })
+                .addOnCompleteListener(task -> setSendLoading(false));
     }
 
     @Override
@@ -134,5 +162,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (messageListener != null) messageListener.remove();
+    }
+
+    private void setSendLoading(boolean loading) {
+        sendInFlight = loading;
+        binding.btnSend.setEnabled(!loading);
+        binding.etMessage.setEnabled(!loading);
     }
 }

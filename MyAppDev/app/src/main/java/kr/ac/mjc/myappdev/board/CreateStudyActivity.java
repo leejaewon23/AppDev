@@ -61,7 +61,11 @@ public class CreateStudyActivity extends AppCompatActivity {
         FirebaseUtil.getStudyPostsRef().document(editPostId).get()
                 .addOnSuccessListener(doc -> {
                     StudyPost post = doc.toObject(StudyPost.class);
-                    if (post == null) return;
+                    if (post == null) {
+                        Toast.makeText(this, "게시글을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
                     binding.etTitle.setText(post.getTitle());
                     binding.etDescription.setText(post.getDescription());
                     binding.etMaxMembers.setText(String.valueOf(post.getMaxMembers()));
@@ -78,6 +82,10 @@ public class CreateStudyActivity extends AppCompatActivity {
                             break;
                         }
                     }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "게시글을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                    finish();
                 });
     }
 
@@ -92,7 +100,13 @@ public class CreateStudyActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(description)) { binding.etDescription.setError("내용을 입력하세요"); return; }
         if (TextUtils.isEmpty(maxStr)) { binding.etMaxMembers.setError("최대 인원을 입력하세요"); return; }
 
-        int maxMembers = Integer.parseInt(maxStr);
+        int maxMembers;
+        try {
+            maxMembers = Integer.parseInt(maxStr);
+        } catch (NumberFormatException e) {
+            binding.etMaxMembers.setError("숫자만 입력하세요");
+            return;
+        }
         if (maxMembers < 2 || maxMembers > 20) {
             binding.etMaxMembers.setError("2~20명 사이로 입력하세요"); return;
         }
@@ -114,6 +128,9 @@ public class CreateStudyActivity extends AppCompatActivity {
         FirebaseUtil.getUsersRef().document(uid).get()
                 .addOnSuccessListener(doc -> {
                     String nickname = doc.getString("nickname");
+                    if (nickname == null || nickname.trim().isEmpty()) {
+                        nickname = "익명";
+                    }
                     StudyPost post = new StudyPost(uid, nickname, title, description,
                             field, location, maxMembers);
                     FirebaseUtil.getStudyPostsRef().add(post)
@@ -125,6 +142,10 @@ public class CreateStudyActivity extends AppCompatActivity {
                                 setLoading(false);
                                 Toast.makeText(this, "등록 실패", Toast.LENGTH_SHORT).show();
                             });
+                })
+                .addOnFailureListener(e -> {
+                    setLoading(false);
+                    Toast.makeText(this, "작성자 정보를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                 });
     }
 

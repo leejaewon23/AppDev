@@ -74,7 +74,12 @@ public class StudyPost {
     public boolean isRecruiting() { return recruiting; }
     public void setRecruiting(boolean recruiting) { this.recruiting = recruiting; }
 
-    public List<String> getMemberUids() { return memberUids; }
+    public List<String> getMemberUids() {
+        if (memberUids == null) {
+            memberUids = new ArrayList<>();
+        }
+        return memberUids;
+    }
     public void setMemberUids(List<String> memberUids) { this.memberUids = memberUids; }
 
     public String getChatRoomId() { return chatRoomId; }

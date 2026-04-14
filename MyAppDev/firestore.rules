@@ -13,6 +13,67 @@ service cloud.firestore {
     function isMemberOf(resource) {
       return isLoggedIn() && request.auth.uid in resource.data.memberUids;
     }
+    function isAuthorOfPost() {
+      return isLoggedIn() && resource.data.authorUid == request.auth.uid;
+    }
+    function isValidPostCreate() {
+      return request.resource.data.authorUid == request.auth.uid
+             && request.resource.data.memberUids.size() == 1
+             && request.auth.uid in request.resource.data.memberUids
+             && request.resource.data.currentMembers == 1
+             && request.resource.data.maxMembers >= 2
+             && request.resource.data.currentMembers <= request.resource.data.maxMembers
+             && request.resource.data.recruiting == true;
+    }
+    function isValidSelfJoin() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let nextCount = resource.data.currentMembers + 1;
+      let nextRecruiting = nextCount < resource.data.maxMembers;
+      return resource.data.recruiting == true
+             && resource.data.currentMembers < resource.data.maxMembers
+             && !(request.auth.uid in resource.data.memberUids)
+             && request.auth.uid in request.resource.data.memberUids
+             && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
+             && request.resource.data.currentMembers == nextCount
+             && request.resource.data.currentMembers <= resource.data.maxMembers
+             && request.resource.data.recruiting == nextRecruiting
+             && changedKeys.hasOnly(['memberUids', 'currentMembers', 'recruiting', 'updatedAt']);
+    }
+    function isValidChatRoomLink(postId) {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let currentChatRoomId = resource.data.chatRoomId == null ? '' : resource.data.chatRoomId;
+      return request.auth.uid in resource.data.memberUids
+             && currentChatRoomId == ''
+             && request.resource.data.chatRoomId == postId
+             && changedKeys.hasOnly(['chatRoomId', 'updatedAt']);
+    }
+    function isValidRoomCreate(roomId) {
+      return isLoggedIn()
+             && request.resource.data.type == 'GROUP'
+             && request.resource.data.studyPostId == roomId
+             && request.resource.data.roomName is string
+             && request.resource.data.lastMessage is string
+             && request.resource.data.lastMessageAt is timestamp
+             && request.auth.uid in request.resource.data.memberUids
+             && request.resource.data.memberUids ==
+                get(/databases/$(database)/documents/studyPosts/$(request.resource.data.studyPostId)).data.memberUids;
+    }
+    function isValidRoomMetadataUpdate() {
+      return isMemberOf(resource)
+             && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['lastMessage', 'lastMessageAt']);
+    }
+    function isValidRoomSelfJoin() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let postAfter = getAfter(
+        /databases/$(database)/documents/studyPosts/$(resource.data.studyPostId)
+      ).data;
+      return request.auth.uid in postAfter.memberUids
+             && !(request.auth.uid in resource.data.memberUids)
+             && request.auth.uid in request.resource.data.memberUids
+             && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
+             && changedKeys.hasOnly(['memberUids']);
+    }
 
     // ── 유저 프로필 ─────────────────────────────────────────────
     match /users/{uid} {
@@ -27,16 +88,12 @@ service cloud.firestore {
       // 로그인한 유저 모두 읽기 가능
       allow read: if isLoggedIn();
       // 로그인한 유저는 게시글 생성 가능
-      allow create: if isLoggedIn()
-                    && request.resource.data.authorUid == request.auth.uid;
-      // 수정: 작성자만 가능 (참여 신청은 memberUids, currentMembers 업데이트 허용)
+      allow create: if isLoggedIn() && isValidPostCreate();
+      // 수정: 작성자만 가능. 예외적으로 참여자는 본인 참여 처리와 채팅방 연결만 가능.
       allow update: if isLoggedIn() && (
-          // 작성자: 모든 필드 수정 가능
-          resource.data.authorUid == request.auth.uid
-          ||
-          // 참여자: memberUids, currentMembers, recruiting 만 수정 허용
-          (request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['memberUids', 'currentMembers', 'recruiting', 'chatRoomId']))
+          isAuthorOfPost()
+          || isValidSelfJoin()
+          || isValidChatRoomLink(postId)
       );
       // 삭제: 작성자만 가능
       allow delete: if isOwner(resource.data.authorUid);
@@ -44,11 +101,12 @@ service cloud.firestore {
 
     // ── 채팅방 ───────────────────────────────────────────────────
     match /chatRooms/{roomId} {
-      // 채팅방 멤버만 읽기/수정 가능
-      allow read, update: if isMemberOf(resource);
-      // 로그인한 유저는 채팅방 생성 가능
-      allow create: if isLoggedIn()
-                    && request.auth.uid in request.resource.data.memberUids;
+      // 채팅방 멤버만 읽기 가능
+      allow read: if isMemberOf(resource);
+      // 그룹 채팅방은 스터디당 1개로 고정
+      allow create: if isValidRoomCreate(roomId);
+      // 메시지 메타데이터 갱신 또는 방 참여 동기화만 허용
+      allow update: if isValidRoomMetadataUpdate() || isValidRoomSelfJoin();
 
       // ── 메시지 서브컬렉션 ────────────────────────────────────
       match /messages/{messageId} {
