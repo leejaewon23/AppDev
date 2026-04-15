@@ -10,67 +10,81 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:paddingTop="16dp">
+        android:paddingTop="52dp">
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="56dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="28dp"
-            app:cardElevation="0dp">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
                 android:background="@drawable/bg_profile_header"
+                android:gravity="center_vertical"
+                android:minHeight="120dp"
+                android:orientation="horizontal"
+                android:padding="22dp">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/ivProfile"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginEnd="16dp"
+                    android:src="@android:drawable/ic_menu_myplaces"
+                    app:civ_border_color="@color/white"
+                    app:civ_border_width="2dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvNickname"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="#D4E1EF"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/surface_card"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/line_soft"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <de.hdodenhof.circleimageview.CircleImageView
-                        android:id="@+id/ivProfile"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:layout_marginEnd="16dp"
-                        android:src="@android:drawable/ic_menu_myplaces"
-                        app:civ_border_color="@color/white"
-                        app:civ_border_width="2dp"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvNickname"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/white"
-                            android:textSize="22sp"
-                            android:textStyle="bold"/>
-
-                        <TextView
-                            android:id="@+id/tvEmail"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textColor="#D4E1EF"
-                            android:textSize="13sp"/>
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
                     android:orientation="horizontal">
 
                     <com.google.android.material.card.MaterialCardView
@@ -78,7 +92,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        app:cardBackgroundColor="#1FE8F5F3"
+                        app:cardBackgroundColor="@color/primary_light"
                         app:cardCornerRadius="18dp"
                         app:cardElevation="0dp">
 
@@ -92,7 +106,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="만든 스터디"
-                                android:textColor="#D4E1EF"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
 
                             <TextView
@@ -101,7 +115,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="0"
-                                android:textColor="@color/white"
+                                android:textColor="@color/primary"
                                 android:textSize="18sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -111,7 +125,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        app:cardBackgroundColor="#1FFFE0D5"
+                        app:cardBackgroundColor="@color/surface_soft"
                         app:cardCornerRadius="18dp"
                         app:cardElevation="0dp">
 
@@ -125,7 +139,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="참여 중"
-                                android:textColor="#FFE9D8"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
 
                             <TextView
@@ -134,7 +148,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="0"
-                                android:textColor="@color/white"
+                                android:textColor="@color/primary"
                                 android:textSize="18sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -153,7 +167,6 @@
                     app:cornerRadius="18dp"
                     app:iconTint="@color/primary"
                     app:rippleColor="@color/primary_light" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

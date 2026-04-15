@@ -9,8 +9,13 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.Timestamp;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import kr.ac.mjc.myappdev.R;
 import kr.ac.mjc.myappdev.model.ChatRoom;
@@ -50,22 +55,45 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHo
     public int getItemCount() { return rooms.size(); }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRoomName, tvLastMessage, tvType;
+        TextView tvRoomName, tvLastMessage, tvType, tvTime;
 
         ViewHolder(View itemView) {
             super(itemView);
             tvRoomName   = itemView.findViewById(R.id.tvRoomName);
             tvLastMessage = itemView.findViewById(R.id.tvLastMessage);
             tvType       = itemView.findViewById(R.id.tvType);
+            tvTime       = itemView.findViewById(R.id.tvTime);
         }
 
         void bind(ChatRoom room, OnItemClickListener listener) {
             String name = room.getRoomName() != null && !room.getRoomName().isEmpty()
                     ? room.getRoomName() : "1:1 채팅";
             tvRoomName.setText(name);
-            tvLastMessage.setText(room.getLastMessage() != null ? room.getLastMessage() : "");
-            tvType.setText(ChatRoom.TYPE_GROUP.equals(room.getType()) ? "그룹" : "1:1");
+            String lastMessage = room.getLastMessage();
+            tvLastMessage.setText(lastMessage != null && !lastMessage.isEmpty()
+                    ? lastMessage
+                    : "아직 메시지가 없습니다");
+            tvType.setText(ChatRoom.TYPE_GROUP.equals(room.getType()) ? "그룹" : "개인");
+            tvTime.setText(formatTime(room.getLastMessageAt()));
             itemView.setOnClickListener(v -> listener.onItemClick(room));
+        }
+
+        private String formatTime(Timestamp timestamp) {
+            if (timestamp == null) {
+                return "";
+            }
+
+            Date date = timestamp.toDate();
+            long diff = System.currentTimeMillis() - date.getTime();
+            long oneDay = 24L * 60L * 60L * 1000L;
+
+            if (diff < oneDay) {
+                return new SimpleDateFormat("a h:mm", Locale.KOREA).format(date);
+            }
+            if (diff < oneDay * 2) {
+                return "어제";
+            }
+            return new SimpleDateFormat("M월 d일", Locale.KOREA).format(date);
         }
     }
 }
