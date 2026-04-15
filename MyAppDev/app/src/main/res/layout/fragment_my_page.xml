@@ -147,6 +147,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:text="프로필 수정"
+                    android:textColor="@color/primary"
                     android:textStyle="bold"
                     app:backgroundTint="@color/white"
                     app:cornerRadius="18dp"
@@ -220,6 +221,7 @@
             android:textColor="@color/primary"
             android:textStyle="bold"
             app:cornerRadius="18dp"
+            app:rippleColor="@color/primary_light"
             app:strokeWidth="0dp"/>
 
     </LinearLayout>
