@@ -63,6 +63,20 @@ service cloud.firestore {
              && request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(['lastMessage', 'lastMessageAt']);
     }
+    function isStudyOwnerForRoom() {
+      return isLoggedIn()
+             && request.auth.uid ==
+                get(/databases/$(database)/documents/studyPosts/$(resource.data.studyPostId)).data.authorUid;
+    }
+    function isValidRoomNoticeUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isStudyOwnerForRoom()
+             && request.resource.data.notice is string
+             && request.resource.data.notice.size() <= 300
+             && request.resource.data.noticeUpdatedAt is timestamp
+             && request.resource.data.noticeUpdatedByUid == request.auth.uid
+             && changedKeys.hasOnly(['notice', 'noticeUpdatedAt', 'noticeUpdatedByUid']);
+    }
     function isValidRoomSelfJoin() {
       let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
       let postAfter = getAfter(
@@ -106,7 +120,7 @@ service cloud.firestore {
       // 그룹 채팅방은 스터디당 1개로 고정
       allow create: if isValidRoomCreate(roomId);
       // 메시지 메타데이터 갱신 또는 방 참여 동기화만 허용
-      allow update: if isValidRoomMetadataUpdate() || isValidRoomSelfJoin();
+      allow update: if isValidRoomMetadataUpdate() || isValidRoomNoticeUpdate() || isValidRoomSelfJoin();
 
       // ── 메시지 서브컬렉션 ────────────────────────────────────
       match /messages/{messageId} {

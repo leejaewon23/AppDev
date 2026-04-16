@@ -16,6 +16,9 @@ public class ChatRoom {
     private String roomName;              // 그룹 채팅방 이름 (스터디 제목)
     private String lastMessage;
     private Timestamp lastMessageAt;
+    private String notice;
+    private Timestamp noticeUpdatedAt;
+    private String noticeUpdatedByUid;
 
     public ChatRoom() {
         memberUids = new ArrayList<>();
@@ -29,6 +32,8 @@ public class ChatRoom {
         this.memberUids = memberUids;
         this.lastMessage = "";
         this.lastMessageAt = Timestamp.now();
+        this.notice = "";
+        this.noticeUpdatedByUid = "";
     }
 
     // 1:1 채팅방 생성용
@@ -39,6 +44,8 @@ public class ChatRoom {
         this.memberUids.add(uid2);
         this.lastMessage = "";
         this.lastMessageAt = Timestamp.now();
+        this.notice = "";
+        this.noticeUpdatedByUid = "";
     }
 
     public String getRoomId() { return roomId; }
@@ -66,4 +73,13 @@ public class ChatRoom {
 
     public Timestamp getLastMessageAt() { return lastMessageAt; }
     public void setLastMessageAt(Timestamp lastMessageAt) { this.lastMessageAt = lastMessageAt; }
+
+    public String getNotice() { return notice == null ? "" : notice; }
+    public void setNotice(String notice) { this.notice = notice; }
+
+    public Timestamp getNoticeUpdatedAt() { return noticeUpdatedAt; }
+    public void setNoticeUpdatedAt(Timestamp noticeUpdatedAt) { this.noticeUpdatedAt = noticeUpdatedAt; }
+
+    public String getNoticeUpdatedByUid() { return noticeUpdatedByUid == null ? "" : noticeUpdatedByUid; }
+    public void setNoticeUpdatedByUid(String noticeUpdatedByUid) { this.noticeUpdatedByUid = noticeUpdatedByUid; }
 }

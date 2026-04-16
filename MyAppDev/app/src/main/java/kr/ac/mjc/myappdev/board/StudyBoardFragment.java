@@ -2,6 +2,8 @@ package kr.ac.mjc.myappdev.board;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import kr.ac.mjc.myappdev.databinding.FragmentStudyBoardBinding;
 import kr.ac.mjc.myappdev.model.StudyPost;
@@ -26,9 +29,12 @@ public class StudyBoardFragment extends Fragment {
 
     private FragmentStudyBoardBinding binding;
     private StudyAdapter adapter;
+    private final List<StudyPost> allPosts = new ArrayList<>();
 
     private String selectedField    = "";
     private String selectedLocation = "";
+    private String searchKeyword    = "";
+    private boolean recruitingOnly;
     private boolean filtersInitialized;
 
     // 필터 옵션 (실제 앱에서는 서버에서 받거나 strings.xml로 관리)
@@ -89,7 +95,7 @@ public class StudyBoardFragment extends Fragment {
                 if (!filtersInitialized) {
                     return;
                 }
-                loadPosts();
+                applyFilters();
             }
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
@@ -97,36 +103,127 @@ public class StudyBoardFragment extends Fragment {
 
         binding.spinnerField.setOnItemSelectedListener(filterListener);
         binding.spinnerLocation.setOnItemSelectedListener(filterListener);
+        binding.cbRecruitingOnly.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            recruitingOnly = isChecked;
+            if (filtersInitialized) {
+                applyFilters();
+            }
+        });
+        binding.etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchKeyword = s == null ? "" : s.toString().trim();
+                if (filtersInitialized) {
+                    applyFilters();
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+        binding.btnResetFilters.setOnClickListener(v -> resetFilters());
         filtersInitialized = true;
     }
 
     private void loadPosts() {
         binding.progressBar.setVisibility(View.VISIBLE);
-
-        Query query = FirebaseUtil.getStudyPostsRef()
-                .orderBy("createdAt", Query.Direction.DESCENDING);
-
-        if (!selectedField.isEmpty()) {
-            query = query.whereEqualTo("field", selectedField);
-        }
-        if (!selectedLocation.isEmpty()) {
-            query = query.whereEqualTo("location", selectedLocation);
-        }
-
-        query.get().addOnSuccessListener(snapshots -> {
-            List<StudyPost> posts = new ArrayList<>();
+        FirebaseUtil.getStudyPostsRef()
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snapshots -> {
+            allPosts.clear();
             for (var doc : snapshots) {
                 StudyPost post = doc.toObject(StudyPost.class);
                 post.setPostId(doc.getId());
-                posts.add(post);
+                allPosts.add(post);
             }
-            adapter.submitList(posts);
             binding.progressBar.setVisibility(View.GONE);
-            binding.tvEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+            applyFilters();
         }).addOnFailureListener(e -> {
             binding.progressBar.setVisibility(View.GONE);
+            binding.tvFilterSummary.setText("스터디 목록을 불러오지 못했습니다");
             binding.tvEmpty.setVisibility(View.VISIBLE);
         });
+    }
+
+    private void applyFilters() {
+        if (binding == null) {
+            return;
+        }
+
+        List<StudyPost> filteredPosts = new ArrayList<>();
+        for (StudyPost post : allPosts) {
+            if (!selectedField.isEmpty() && !selectedField.equals(post.getField())) {
+                continue;
+            }
+            if (!selectedLocation.isEmpty() && !selectedLocation.equals(post.getLocation())) {
+                continue;
+            }
+            if (recruitingOnly && !post.isRecruiting()) {
+                continue;
+            }
+            if (!matchesKeyword(post, searchKeyword)) {
+                continue;
+            }
+            filteredPosts.add(post);
+        }
+
+        adapter.submitList(filteredPosts);
+        binding.tvEmpty.setVisibility(filteredPosts.isEmpty() ? View.VISIBLE : View.GONE);
+        updateFilterSummary(filteredPosts.size());
+    }
+
+    private boolean matchesKeyword(StudyPost post, String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return true;
+        }
+        String normalized = keyword.toLowerCase(Locale.getDefault());
+        return safeLower(post.getTitle()).contains(normalized)
+                || safeLower(post.getDescription()).contains(normalized)
+                || safeLower(post.getAuthorNickname()).contains(normalized)
+                || safeLower(post.getField()).contains(normalized)
+                || safeLower(post.getLocation()).contains(normalized);
+    }
+
+    private String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.getDefault());
+    }
+
+    private void updateFilterSummary(int resultCount) {
+        List<String> tokens = new ArrayList<>();
+        if (!selectedField.isEmpty()) {
+            tokens.add(selectedField);
+        }
+        if (!selectedLocation.isEmpty()) {
+            tokens.add(selectedLocation);
+        }
+        if (recruitingOnly) {
+            tokens.add("모집 중");
+        }
+        if (!searchKeyword.isEmpty()) {
+            tokens.add("\"" + searchKeyword + "\" 검색");
+        }
+
+        if (tokens.isEmpty()) {
+            binding.tvFilterSummary.setText("전체 스터디 " + resultCount + "개를 보고 있습니다");
+            return;
+        }
+        binding.tvFilterSummary.setText(String.join(" · ", tokens) + " 조건으로 " + resultCount + "개 찾음");
+    }
+
+    private void resetFilters() {
+        selectedField = "";
+        selectedLocation = "";
+        searchKeyword = "";
+        recruitingOnly = false;
+        binding.spinnerField.setSelection(0);
+        binding.spinnerLocation.setSelection(0);
+        binding.cbRecruitingOnly.setChecked(false);
+        binding.etSearch.setText("");
+        applyFilters();
     }
 
     @Override

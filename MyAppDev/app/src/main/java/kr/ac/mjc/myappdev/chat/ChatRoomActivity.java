@@ -2,8 +2,11 @@ package kr.ac.mjc.myappdev.chat;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.format.DateFormat;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,11 +16,15 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import kr.ac.mjc.myappdev.R;
 import kr.ac.mjc.myappdev.databinding.ActivityChatRoomBinding;
+import kr.ac.mjc.myappdev.model.ChatRoom;
 import kr.ac.mjc.myappdev.model.Message;
 import kr.ac.mjc.myappdev.util.FirebaseUtil;
 
@@ -26,10 +33,12 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ActivityChatRoomBinding binding;
     private MessageAdapter adapter;
     private ListenerRegistration messageListener;
+    private ListenerRegistration roomListener;
 
     private String roomId;
     private String myNickname = "";
     private boolean sendInFlight;
+    private boolean canEditNotice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,11 +79,32 @@ public class ChatRoomActivity extends AppCompatActivity {
                         finish();
                         return;
                     }
-                    loadNicknameThenSetup();
+                    resolveNoticePermission(doc.getString("studyPostId"));
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "채팅방 정보를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                     finish();
+                });
+    }
+
+    private void resolveNoticePermission(String studyPostId) {
+        if (studyPostId == null || studyPostId.isEmpty()) {
+            canEditNotice = false;
+            invalidateOptionsMenu();
+            loadNicknameThenSetup();
+            return;
+        }
+        FirebaseUtil.getStudyPostsRef().document(studyPostId).get()
+                .addOnSuccessListener(doc -> {
+                    canEditNotice = doc.exists()
+                            && FirebaseUtil.getCurrentUid().equals(doc.getString("authorUid"));
+                    invalidateOptionsMenu();
+                    loadNicknameThenSetup();
+                })
+                .addOnFailureListener(e -> {
+                    canEditNotice = false;
+                    invalidateOptionsMenu();
+                    loadNicknameThenSetup();
                 });
     }
 
@@ -85,12 +115,27 @@ public class ChatRoomActivity extends AppCompatActivity {
                     myNickname = doc.getString("nickname");
                     if (myNickname == null) myNickname = "익명";
                     setupRecyclerView();
+                    subscribeRoom();
                     subscribeMessages();
                     binding.btnSend.setOnClickListener(v -> sendMessage());
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "프로필 정보를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
                     finish();
+                });
+    }
+
+    private void subscribeRoom() {
+        roomListener = FirebaseUtil.getChatRoomsRef().document(roomId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null || !snapshot.exists()) {
+                        return;
+                    }
+                    ChatRoom room = snapshot.toObject(ChatRoom.class);
+                    if (room == null) {
+                        return;
+                    }
+                    renderNotice(room);
                 });
     }
 
@@ -152,9 +197,80 @@ public class ChatRoomActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> setSendLoading(false));
     }
 
+    private void renderNotice(ChatRoom room) {
+        String notice = room.getNotice().trim();
+        boolean hasNotice = !notice.isEmpty();
+        binding.cardNotice.setVisibility(hasNotice ? View.VISIBLE : View.GONE);
+        if (!hasNotice) {
+            return;
+        }
+
+        binding.tvNotice.setText(notice);
+        Timestamp updatedAt = room.getNoticeUpdatedAt();
+        if (updatedAt == null) {
+            binding.tvNoticeMeta.setText("");
+            return;
+        }
+        CharSequence formatted = DateFormat.format("yyyy.MM.dd HH:mm", new Date(updatedAt.toDate().getTime()));
+        binding.tvNoticeMeta.setText(getString(R.string.chat_notice_updated_at, formatted));
+    }
+
+    private void showNoticeEditor() {
+        if (!canEditNotice) {
+            return;
+        }
+        EditText input = new EditText(this);
+        input.setHint(R.string.chat_notice_hint);
+        input.setMinLines(3);
+        input.setMaxLines(6);
+        input.setText(binding.tvNotice.getText());
+        int padding = (int) (20 * getResources().getDisplayMetrics().density);
+        input.setPadding(padding, padding, padding, padding);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.chat_notice_edit)
+                .setView(input)
+                .setPositiveButton(R.string.chat_notice_save, (dialog, which) -> saveNotice(input.getText().toString()))
+                .setNeutralButton(R.string.chat_notice_clear, (dialog, which) -> saveNotice(""))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void saveNotice(String rawNotice) {
+        String notice = rawNotice == null ? "" : rawNotice.trim();
+        if (notice.length() > 300) {
+            Toast.makeText(this, "공지는 300자 이하로 입력해주세요", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("notice", notice);
+        updates.put("noticeUpdatedAt", Timestamp.now());
+        updates.put("noticeUpdatedByUid", FirebaseUtil.getCurrentUid());
+
+        FirebaseUtil.getChatRoomsRef().document(roomId)
+                .update(updates)
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "공지 저장에 실패했습니다", Toast.LENGTH_SHORT).show());
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_chat_room, menu);
+        MenuItem noticeItem = menu.findItem(R.id.action_edit_notice);
+        if (noticeItem != null) {
+            noticeItem.setVisible(canEditNotice);
+        }
+        return true;
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) { finish(); return true; }
+        if (item.getItemId() == R.id.action_edit_notice) {
+            showNoticeEditor();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -162,6 +278,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (messageListener != null) messageListener.remove();
+        if (roomListener != null) roomListener.remove();
     }
 
     private void setSendLoading(boolean loading) {
