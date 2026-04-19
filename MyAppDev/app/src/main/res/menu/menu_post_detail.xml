@@ -8,6 +8,16 @@
         app:showAsAction="never"/>
 
     <item
+        android:id="@+id/action_toggle_recruiting"
+        android:title="스터디 종료"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_leave"
+        android:title="스터디 탈퇴"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/action_delete"
         android:title="삭제"
         app:showAsAction="never"/>

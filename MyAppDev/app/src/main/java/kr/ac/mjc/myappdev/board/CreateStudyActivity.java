@@ -23,6 +23,7 @@ public class CreateStudyActivity extends AppCompatActivity {
     private ActivityCreateStudyBinding binding;
     private String editPostId;   // 수정 모드일 때 게시글 ID
     private boolean isEditMode;
+    private int existingCurrentMembers = 1;
 
     private static final String[] FIELDS    = {"코딩", "취업", "자격증", "영어", "공무원", "기타"};
     private static final String[] LOCATIONS = {"서울", "경기", "인천", "부산", "대구", "온라인"};
@@ -69,6 +70,7 @@ public class CreateStudyActivity extends AppCompatActivity {
                     binding.etTitle.setText(post.getTitle());
                     binding.etDescription.setText(post.getDescription());
                     binding.etMaxMembers.setText(String.valueOf(post.getMaxMembers()));
+                    existingCurrentMembers = post.getCurrentMembers();
                     // Spinner 선택 복원
                     for (int i = 0; i < FIELDS.length; i++) {
                         if (FIELDS[i].equals(post.getField())) {
@@ -151,6 +153,12 @@ public class CreateStudyActivity extends AppCompatActivity {
 
     private void updatePost(String title, String description,
                             String field, String location, int maxMembers) {
+        if (maxMembers < existingCurrentMembers) {
+            binding.etMaxMembers.setError("현재 참여 인원(" + existingCurrentMembers + "명)보다 작게 설정할 수 없습니다");
+            setLoading(false);
+            return;
+        }
+
         // 보안: 본인 게시글만 수정 가능 — Firestore Security Rules로 이중 검증
         Map<String, Object> updates = new HashMap<>();
         updates.put("title", title);
@@ -158,6 +166,9 @@ public class CreateStudyActivity extends AppCompatActivity {
         updates.put("field", field);
         updates.put("location", location);
         updates.put("maxMembers", maxMembers);
+        if (maxMembers == existingCurrentMembers) {
+            updates.put("recruiting", false);
+        }
         updates.put("updatedAt", Timestamp.now());
 
         FirebaseUtil.getStudyPostsRef().document(editPostId)

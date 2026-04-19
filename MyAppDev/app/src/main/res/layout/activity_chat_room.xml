@@ -24,10 +24,10 @@
         android:layout_marginHorizontal="12dp"
         android:layout_marginTop="12dp"
         android:visibility="gone"
-        app:cardBackgroundColor="@color/primary_light"
+        app:cardBackgroundColor="@color/info_light"
         app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
-        app:strokeColor="@color/primary"
+        app:strokeColor="@color/info"
         app:strokeWidth="1dp">
 
         <LinearLayout
@@ -40,7 +40,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/chat_notice_label"
-                android:textColor="@color/primary_dark"
+                android:textColor="@color/info"
                 android:textStyle="bold" />
 
             <TextView

@@ -73,6 +73,40 @@
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleLine="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipQuickRecruiting"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="모집 중" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipQuickOnline"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="온라인" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipQuickCoding"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="코딩" />
+                    </com.google.android.material.chip.ChipGroup>
+                </HorizontalScrollView>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -103,7 +137,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="제목, 설명, 작성자 검색"
+                    android:hint="제목·분야·지역 검색"
                     app:boxBackgroundColor="@color/surface"
                     app:boxBackgroundMode="filled"
                     app:boxCornerRadiusBottomEnd="18dp"

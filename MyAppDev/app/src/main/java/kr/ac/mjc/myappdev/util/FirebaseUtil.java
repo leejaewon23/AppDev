@@ -15,6 +15,7 @@ public class FirebaseUtil {
     // Firestore 컬렉션 이름 상수
     public static final String COLLECTION_USERS      = "users";
     public static final String COLLECTION_POSTS      = "studyPosts";
+    public static final String COLLECTION_SCHEDULES  = "schedules";
     public static final String COLLECTION_CHATROOMS  = "chatRooms";
     public static final String COLLECTION_MESSAGES   = "messages";
 
@@ -54,6 +55,12 @@ public class FirebaseUtil {
 
     public static CollectionReference getChatRoomsRef() {
         return getFirestore().collection(COLLECTION_CHATROOMS);
+    }
+
+    public static CollectionReference getStudySchedulesRef(String postId) {
+        return getStudyPostsRef()
+                .document(postId)
+                .collection(COLLECTION_SCHEDULES);
     }
 
     public static CollectionReference getMessagesRef(String roomId) {

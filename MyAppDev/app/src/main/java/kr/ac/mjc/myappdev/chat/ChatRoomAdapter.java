@@ -1,6 +1,5 @@
 package kr.ac.mjc.myappdev.chat;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import kr.ac.mjc.myappdev.R;
 import kr.ac.mjc.myappdev.model.ChatRoom;
@@ -55,13 +55,14 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHo
     public int getItemCount() { return rooms.size(); }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRoomName, tvLastMessage, tvType, tvTime;
+        TextView tvRoomName, tvLastMessage, tvTypeBadge, tvNoticeBadge, tvTime;
 
         ViewHolder(View itemView) {
             super(itemView);
             tvRoomName   = itemView.findViewById(R.id.tvRoomName);
             tvLastMessage = itemView.findViewById(R.id.tvLastMessage);
-            tvType       = itemView.findViewById(R.id.tvType);
+            tvTypeBadge = itemView.findViewById(R.id.tvTypeBadge);
+            tvNoticeBadge = itemView.findViewById(R.id.tvNoticeBadge);
             tvTime       = itemView.findViewById(R.id.tvTime);
         }
 
@@ -73,7 +74,9 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHo
             tvLastMessage.setText(lastMessage != null && !lastMessage.isEmpty()
                     ? lastMessage
                     : "아직 메시지가 없습니다");
-            tvType.setText(ChatRoom.TYPE_GROUP.equals(room.getType()) ? "그룹" : "개인");
+            tvTypeBadge.setText(ChatRoom.TYPE_GROUP.equals(room.getType()) ? "스터디" : "개인");
+            tvNoticeBadge.setVisibility(room.getNotice() != null && !room.getNotice().trim().isEmpty()
+                    ? View.VISIBLE : View.GONE);
             tvTime.setText(formatTime(room.getLastMessageAt()));
             itemView.setOnClickListener(v -> listener.onItemClick(room));
         }
@@ -86,6 +89,12 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ViewHo
             Date date = timestamp.toDate();
             long diff = System.currentTimeMillis() - date.getTime();
             long oneDay = 24L * 60L * 60L * 1000L;
+            if (diff < TimeUnit.MINUTES.toMillis(1)) {
+                return "방금 전";
+            }
+            if (diff < TimeUnit.HOURS.toMillis(1)) {
+                return (diff / TimeUnit.MINUTES.toMillis(1)) + "분 전";
+            }
 
             if (diff < oneDay) {
                 return new SimpleDateFormat("a h:mm", Locale.KOREA).format(date);

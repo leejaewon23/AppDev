@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 
 import kr.ac.mjc.myappdev.auth.LoginActivity;
 import kr.ac.mjc.myappdev.board.StudyBoardFragment;
+import kr.ac.mjc.myappdev.calendar.CalendarFragment;
 import kr.ac.mjc.myappdev.chat.ChatListFragment;
 import kr.ac.mjc.myappdev.databinding.ActivityMainBinding;
 import kr.ac.mjc.myappdev.mypage.MyPageFragment;
@@ -40,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new StudyBoardFragment());
             } else if (id == R.id.nav_chat) {
                 loadFragment(new ChatListFragment());
+            } else if (id == R.id.nav_calendar) {
+                loadFragment(new CalendarFragment());
             } else if (id == R.id.nav_mypage) {
                 loadFragment(new MyPageFragment());
             }

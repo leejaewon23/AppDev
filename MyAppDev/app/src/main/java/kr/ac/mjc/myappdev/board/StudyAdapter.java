@@ -71,8 +71,8 @@ public class StudyAdapter extends RecyclerView.Adapter<StudyAdapter.ViewHolder> 
 
         void bind(StudyPost post, OnItemClickListener listener) {
             tvTitle.setText(post.getTitle());
-            tvAuthor.setText(post.getAuthorNickname() + " 님이 만든 스터디");
-            tvMembers.setText(post.getCurrentMembers() + "/" + post.getMaxMembers() + "명 참여");
+            tvAuthor.setText("운영: " + post.getAuthorNickname());
+            tvMembers.setText("참여 인원 " + post.getCurrentMembers() + "/" + post.getMaxMembers() + "명");
             tvField.setText(post.getField());
             tvLocation.setText(post.getLocation());
             tvSummary.setText(post.getDescription());

@@ -36,6 +36,7 @@ public class StudyBoardFragment extends Fragment {
     private String searchKeyword    = "";
     private boolean recruitingOnly;
     private boolean filtersInitialized;
+    private boolean quickChipSyncInProgress;
 
     // 필터 옵션 (실제 앱에서는 서버에서 받거나 strings.xml로 관리)
     private static final String[] FIELDS    = {"전체", "코딩", "취업", "자격증", "영어", "공무원", "기타"};
@@ -109,6 +110,32 @@ public class StudyBoardFragment extends Fragment {
                 applyFilters();
             }
         });
+        binding.chipQuickRecruiting.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (quickChipSyncInProgress) {
+                return;
+            }
+            binding.cbRecruitingOnly.setChecked(isChecked);
+        });
+        binding.chipQuickOnline.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (quickChipSyncInProgress) {
+                return;
+            }
+            if (isChecked) {
+                binding.spinnerLocation.setSelection(findIndex(LOCATIONS, "온라인"));
+            } else if ("온라인".equals(selectedLocation)) {
+                binding.spinnerLocation.setSelection(0);
+            }
+        });
+        binding.chipQuickCoding.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (quickChipSyncInProgress) {
+                return;
+            }
+            if (isChecked) {
+                binding.spinnerField.setSelection(findIndex(FIELDS, "코딩"));
+            } else if ("코딩".equals(selectedField)) {
+                binding.spinnerField.setSelection(0);
+            }
+        });
         binding.etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -173,7 +200,25 @@ public class StudyBoardFragment extends Fragment {
 
         adapter.submitList(filteredPosts);
         binding.tvEmpty.setVisibility(filteredPosts.isEmpty() ? View.VISIBLE : View.GONE);
+        syncQuickChips();
         updateFilterSummary(filteredPosts.size());
+    }
+
+    private int findIndex(String[] values, String target) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(target)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private void syncQuickChips() {
+        quickChipSyncInProgress = true;
+        binding.chipQuickRecruiting.setChecked(recruitingOnly);
+        binding.chipQuickOnline.setChecked("온라인".equals(selectedLocation));
+        binding.chipQuickCoding.setChecked("코딩".equals(selectedField));
+        quickChipSyncInProgress = false;
     }
 
     private boolean matchesKeyword(StudyPost post, String keyword) {
@@ -223,6 +268,7 @@ public class StudyBoardFragment extends Fragment {
         binding.spinnerLocation.setSelection(0);
         binding.cbRecruitingOnly.setChecked(false);
         binding.etSearch.setText("");
+        syncQuickChips();
         applyFilters();
     }
 

@@ -75,7 +75,7 @@ public class ChatListFragment extends Fragment {
                     adapter.submitList(rooms);
                     binding.tvChatSummary.setText(rooms.isEmpty()
                             ? "아직 참여 중인 채팅이 없습니다."
-                            : "지금 " + rooms.size() + "개의 채팅방에서 대화 중");
+                            : "최근 활동순으로 " + rooms.size() + "개 채팅방을 보고 있습니다");
                     binding.tvEmpty.setVisibility(rooms.isEmpty() ? View.VISIBLE : View.GONE);
                 });
     }
