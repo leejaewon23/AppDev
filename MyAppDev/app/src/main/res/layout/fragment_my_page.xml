@@ -283,13 +283,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:backgroundTint="@color/surface_soft"
+            android:backgroundTint="@color/danger_light"
             android:text="로그아웃"
-            android:textColor="@color/primary"
+            android:textColor="@color/danger"
             android:textStyle="bold"
             app:cornerRadius="18dp"
-            app:rippleColor="@color/primary_light"
-            app:strokeWidth="0dp"/>
+            app:rippleColor="@color/danger_light"
+            app:strokeColor="@color/danger"
+            app:strokeWidth="1dp"/>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
