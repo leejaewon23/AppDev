@@ -1,20 +1,25 @@
 package kr.ac.mjc.myappdev.board;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.SimpleItemAnimator;
 
+import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
@@ -22,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 
 import kr.ac.mjc.myappdev.databinding.FragmentStudyBoardBinding;
+import kr.ac.mjc.myappdev.R;
 import kr.ac.mjc.myappdev.model.StudyPost;
 import kr.ac.mjc.myappdev.util.FirebaseUtil;
 
@@ -72,6 +78,15 @@ public class StudyBoardFragment extends Fragment {
         });
         binding.rvStudyPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvStudyPosts.setAdapter(adapter);
+        binding.rvStudyPosts.setHasFixedSize(true);
+        binding.rvStudyPosts.setItemViewCacheSize(12);
+        binding.rvStudyPosts.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        binding.rvStudyPosts.setLayoutAnimation(
+                AnimationUtils.loadLayoutAnimation(requireContext(), R.anim.study_board_layout_animation));
+        if (binding.rvStudyPosts.getItemAnimator() instanceof SimpleItemAnimator) {
+            ((SimpleItemAnimator) binding.rvStudyPosts.getItemAnimator())
+                    .setSupportsChangeAnimations(false);
+        }
     }
 
     private void setupFilters() {
@@ -151,8 +166,34 @@ public class StudyBoardFragment extends Fragment {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+        applyQuickChipStyles();
         binding.btnResetFilters.setOnClickListener(v -> resetFilters());
         filtersInitialized = true;
+    }
+
+    private void applyQuickChipStyles() {
+        styleQuickChip(binding.chipQuickRecruiting, R.color.success_light, R.color.success, R.color.success);
+        styleQuickChip(binding.chipQuickOnline, R.color.info_light, R.color.info, R.color.info);
+        styleQuickChip(binding.chipQuickCoding, R.color.primary_light, R.color.primary_mid, R.color.primary_mid);
+    }
+
+    private void styleQuickChip(Chip chip, int backgroundColor, int textColor, int strokeColor) {
+        int checkedBackground = ContextCompat.getColor(requireContext(), textColor);
+        int uncheckedBackground = ContextCompat.getColor(requireContext(), backgroundColor);
+        int checkedTextColor = ContextCompat.getColor(requireContext(), R.color.white);
+        int uncheckedTextColor = ContextCompat.getColor(requireContext(), textColor);
+        int checkedStrokeColor = ContextCompat.getColor(requireContext(), textColor);
+        int uncheckedStrokeColor = ContextCompat.getColor(requireContext(), strokeColor);
+
+        int[][] states = new int[][]{
+                new int[]{android.R.attr.state_checked},
+                new int[]{}
+        };
+        chip.setChipBackgroundColor(new ColorStateList(states, new int[]{checkedBackground, uncheckedBackground}));
+        chip.setTextColor(new ColorStateList(states, new int[]{checkedTextColor, uncheckedTextColor}));
+        chip.setChipStrokeColor(new ColorStateList(states, new int[]{checkedStrokeColor, uncheckedStrokeColor}));
+        chip.setChipStrokeWidth(1f);
+        chip.setCheckedIconVisible(false);
     }
 
     private void loadPosts() {
@@ -199,6 +240,9 @@ public class StudyBoardFragment extends Fragment {
         }
 
         adapter.submitList(filteredPosts);
+        if (!filteredPosts.isEmpty()) {
+            binding.rvStudyPosts.scheduleLayoutAnimation();
+        }
         binding.tvEmpty.setVisibility(filteredPosts.isEmpty() ? View.VISIBLE : View.GONE);
         syncQuickChips();
         updateFilterSummary(filteredPosts.size());

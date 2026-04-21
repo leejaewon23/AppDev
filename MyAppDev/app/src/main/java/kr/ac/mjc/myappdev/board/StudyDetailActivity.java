@@ -19,6 +19,7 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Transaction;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -182,7 +183,7 @@ public class StudyDetailActivity extends AppCompatActivity {
                 if (uid == null || uid.trim().isEmpty()) {
                     continue;
                 }
-                String nickname = nicknames.getOrDefault(uid, uid);
+                String nickname = nicknames.getOrDefault(uid, "이름 미설정");
                 items.add(new StudyMemberAdapter.MemberItem(uid, nickname, uid.equals(authorUid)));
             }
             memberAdapter.submitList(items, canKickMembers);
@@ -195,6 +196,13 @@ public class StudyDetailActivity extends AppCompatActivity {
             return;
         }
         String myUid = FirebaseUtil.getCurrentUid();
+        if (myUid == null || myUid.trim().isEmpty()) {
+            Toast.makeText(this, "로그인이 필요합니다", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String myEmail = FirebaseUtil.getCurrentUser() != null && FirebaseUtil.getCurrentUser().getEmail() != null
+                ? FirebaseUtil.getCurrentUser().getEmail()
+                : "";
 
         // 이미 멤버인 경우 채팅방으로
         if (currentPost.getMemberUids().contains(myUid)) {
@@ -208,7 +216,7 @@ public class StudyDetailActivity extends AppCompatActivity {
         db.runTransaction((Transaction.Function<Void>) transaction -> {
             var postRef = FirebaseUtil.getStudyPostsRef().document(postId);
             var userRef = FirebaseUtil.getUsersRef().document(myUid);
-
+            var userSnapshot = transaction.get(userRef);
             var postSnapshot = transaction.get(postRef);
             StudyPost freshPost = postSnapshot.toObject(StudyPost.class);
             if (freshPost == null) {
@@ -227,15 +235,8 @@ public class StudyDetailActivity extends AppCompatActivity {
             int nextCount = freshPost.getCurrentMembers() + 1;
             boolean nextRecruiting = nextCount < freshPost.getMaxMembers();
 
-            Map<String, Object> postUpdates = new HashMap<>();
-            postUpdates.put("memberUids", memberUids);
-            postUpdates.put("currentMembers", nextCount);
-            postUpdates.put("recruiting", nextRecruiting);
-            postUpdates.put("updatedAt", Timestamp.now());
-            transaction.update(postRef, postUpdates);
-            transaction.update(userRef, "joinedStudyIds", FieldValue.arrayUnion(postId));
-
             String chatRoomId = freshPost.getChatRoomId();
+            List<String> nextRoomMembers = null;
             if (chatRoomId != null && !chatRoomId.isEmpty()) {
                 var roomRef = FirebaseUtil.getChatRoomsRef().document(chatRoomId);
                 var roomSnapshot = transaction.get(roomRef);
@@ -246,9 +247,32 @@ public class StudyDetailActivity extends AppCompatActivity {
                             : new ArrayList<>();
                     if (!roomMembers.contains(myUid)) {
                         roomMembers.add(myUid);
-                        transaction.update(roomRef, "memberUids", roomMembers);
+                        nextRoomMembers = roomMembers;
                     }
                 }
+            }
+
+            Map<String, Object> postUpdates = new HashMap<>();
+            postUpdates.put("memberUids", memberUids);
+            postUpdates.put("currentMembers", nextCount);
+            postUpdates.put("recruiting", nextRecruiting);
+            postUpdates.put("updatedAt", Timestamp.now());
+            transaction.update(postRef, postUpdates);
+            if (userSnapshot.exists()) {
+                transaction.update(userRef, "joinedStudyIds", FieldValue.arrayUnion(postId));
+            } else {
+                Map<String, Object> userSeed = new HashMap<>();
+                userSeed.put("uid", myUid);
+                userSeed.put("email", myEmail);
+                userSeed.put("nickname", "");
+                userSeed.put("profileImageUrl", "");
+                userSeed.put("joinedStudyIds", FieldValue.arrayUnion(postId));
+                userSeed.put("createdAt", Timestamp.now());
+                transaction.set(userRef, userSeed, SetOptions.merge());
+            }
+            if (chatRoomId != null && !chatRoomId.isEmpty() && nextRoomMembers != null) {
+                var roomRef = FirebaseUtil.getChatRoomsRef().document(chatRoomId);
+                transaction.update(roomRef, "memberUids", nextRoomMembers);
             }
             return null;
         }).addOnSuccessListener(v -> {
@@ -351,15 +375,8 @@ public class StudyDetailActivity extends AppCompatActivity {
             }
 
             int nextCount = memberUids.size();
-            Map<String, Object> postUpdates = new HashMap<>();
-            postUpdates.put("memberUids", memberUids);
-            postUpdates.put("currentMembers", nextCount);
-            postUpdates.put("recruiting", nextCount < freshPost.getMaxMembers());
-            postUpdates.put("updatedAt", Timestamp.now());
-            transaction.update(postRef, postUpdates);
-            transaction.update(userRef, "joinedStudyIds", FieldValue.arrayRemove(postId));
-
             String chatRoomId = freshPost.getChatRoomId();
+            List<String> nextRoomMembers = null;
             if (chatRoomId != null && !chatRoomId.isEmpty()) {
                 var roomRef = FirebaseUtil.getChatRoomsRef().document(chatRoomId);
                 var roomSnapshot = transaction.get(roomRef);
@@ -369,9 +386,23 @@ public class StudyDetailActivity extends AppCompatActivity {
                             ? new ArrayList<>(room.getMemberUids())
                             : new ArrayList<>();
                     if (roomMembers.remove(myUid)) {
-                        transaction.update(roomRef, "memberUids", roomMembers);
+                        nextRoomMembers = roomMembers;
                     }
                 }
+            }
+
+            Map<String, Object> postUpdates = new HashMap<>();
+            postUpdates.put("memberUids", memberUids);
+            postUpdates.put("currentMembers", nextCount);
+            postUpdates.put("recruiting", nextCount < freshPost.getMaxMembers());
+            postUpdates.put("updatedAt", Timestamp.now());
+            transaction.update(postRef, postUpdates);
+            Map<String, Object> userUpdates = new HashMap<>();
+            userUpdates.put("joinedStudyIds", FieldValue.arrayRemove(postId));
+            transaction.set(userRef, userUpdates, SetOptions.merge());
+            if (chatRoomId != null && !chatRoomId.isEmpty() && nextRoomMembers != null) {
+                var roomRef = FirebaseUtil.getChatRoomsRef().document(chatRoomId);
+                transaction.update(roomRef, "memberUids", nextRoomMembers);
             }
             return null;
         }).addOnSuccessListener(v -> {
@@ -430,14 +461,8 @@ public class StudyDetailActivity extends AppCompatActivity {
             }
 
             int nextCount = memberUids.size();
-            Map<String, Object> postUpdates = new HashMap<>();
-            postUpdates.put("memberUids", memberUids);
-            postUpdates.put("currentMembers", nextCount);
-            postUpdates.put("recruiting", nextCount < freshPost.getMaxMembers());
-            postUpdates.put("updatedAt", Timestamp.now());
-            transaction.update(postRef, postUpdates);
-
             String chatRoomId = freshPost.getChatRoomId();
+            List<String> nextRoomMembers = null;
             if (chatRoomId != null && !chatRoomId.isEmpty()) {
                 var roomRef = FirebaseUtil.getChatRoomsRef().document(chatRoomId);
                 var roomSnapshot = transaction.get(roomRef);
@@ -447,9 +472,20 @@ public class StudyDetailActivity extends AppCompatActivity {
                             ? new ArrayList<>(room.getMemberUids())
                             : new ArrayList<>();
                     if (roomMembers.remove(targetUid)) {
-                        transaction.update(roomRef, "memberUids", roomMembers);
+                        nextRoomMembers = roomMembers;
                     }
                 }
+            }
+
+            Map<String, Object> postUpdates = new HashMap<>();
+            postUpdates.put("memberUids", memberUids);
+            postUpdates.put("currentMembers", nextCount);
+            postUpdates.put("recruiting", nextCount < freshPost.getMaxMembers());
+            postUpdates.put("updatedAt", Timestamp.now());
+            transaction.update(postRef, postUpdates);
+            if (chatRoomId != null && !chatRoomId.isEmpty() && nextRoomMembers != null) {
+                var roomRef = FirebaseUtil.getChatRoomsRef().document(chatRoomId);
+                transaction.update(roomRef, "memberUids", nextRoomMembers);
             }
             return null;
         }).addOnSuccessListener(v -> {

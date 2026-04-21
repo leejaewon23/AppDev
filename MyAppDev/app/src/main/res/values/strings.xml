@@ -1,12 +1,38 @@
 <resources>
-    <string name="app_name">스터디허브</string>
+    <string name="app_name">스터디 허브</string>
     <string name="btn_join">참여 신청</string>
+    <string name="common_cancel">취소</string>
+    <string name="common_delete">삭제</string>
     <string name="chat_notice_label">스터디 공지</string>
     <string name="chat_notice_edit">공지 수정</string>
     <string name="chat_notice_save">저장</string>
     <string name="chat_notice_clear">공지 삭제</string>
     <string name="chat_notice_hint">이번 주 목표, 준비물, 공지사항을 입력하세요</string>
     <string name="chat_notice_updated_at">최근 수정 %1$s</string>
+    <string name="calendar_fab_add_description">일정 추가</string>
+    <string name="calendar_study_label">스터디</string>
+    <string name="calendar_datetime_label">일시</string>
+    <string name="calendar_hint_title">일정 제목</string>
+    <string name="calendar_hint_description_optional">설명 (선택)</string>
+    <string name="calendar_pick_datetime">날짜/시간 선택</string>
+    <string name="calendar_empty_selected_date">선택한 날짜의 일정이 없습니다</string>
+    <string name="calendar_schedule_load_failed">일정을 불러오지 못했습니다</string>
+    <string name="calendar_no_manageable_studies">일정을 관리할 스터디가 없습니다</string>
+    <string name="calendar_dialog_add_title">일정 추가</string>
+    <string name="calendar_dialog_edit_title">일정 수정</string>
+    <string name="calendar_dialog_positive_add">등록</string>
+    <string name="calendar_dialog_positive_save">저장</string>
+    <string name="calendar_title_required">일정 제목을 입력하세요</string>
+    <string name="calendar_time_past_not_allowed">과거 시각으로는 일정을 저장할 수 없습니다</string>
+    <string name="calendar_schedule_added">일정을 등록했습니다</string>
+    <string name="calendar_schedule_add_failed">일정 등록에 실패했습니다</string>
+    <string name="calendar_schedule_updated">일정을 수정했습니다</string>
+    <string name="calendar_schedule_update_failed">일정 수정에 실패했습니다</string>
+    <string name="calendar_delete_title">일정 삭제</string>
+    <string name="calendar_delete_message">이 일정을 삭제하시겠습니까?</string>
+    <string name="calendar_schedule_deleted">일정을 삭제했습니다</string>
+    <string name="calendar_schedule_delete_failed">일정 삭제에 실패했습니다</string>
+    <string name="calendar_auth_required">로그인 정보가 없어 저장할 수 없습니다. 다시 로그인해주세요</string>
 
     <!-- 분야 필터 -->
     <string-array name="study_fields">

@@ -17,11 +17,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 
 import kr.ac.mjc.myappdev.auth.LoginActivity;
 import kr.ac.mjc.myappdev.board.StudyDetailActivity;
@@ -37,6 +37,9 @@ public class MyPageFragment extends Fragment {
     private FragmentMyPageBinding binding;
     private MyStudyAdapter myPostsAdapter;
     private MyStudyAdapter joinedStudyAdapter;
+    private ListenerRegistration joinedStudiesRegistration;
+    private String joinedStudiesUid;
+    private int joinedStudiesLoadToken = 0;
 
     @Nullable
     @Override
@@ -54,7 +57,7 @@ public class MyPageFragment extends Fragment {
         setupAdapters();
         loadUserProfile();
         loadMyPosts();
-        loadJoinedStudies();
+        startJoinedStudiesListener();
 
         binding.btnEditProfile.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ProfileEditActivity.class)));
@@ -69,7 +72,7 @@ public class MyPageFragment extends Fragment {
         }
         loadUserProfile();
         loadMyPosts();
-        loadJoinedStudies();
+        startJoinedStudiesListener();
     }
 
     private void setupAdapters() {
@@ -78,18 +81,29 @@ public class MyPageFragment extends Fragment {
             intent.putExtra("postId", post.getPostId());
             startActivity(intent);
         });
-        binding.rvMyPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvMyPosts.setLayoutManager(createExpandedLayoutManager());
         binding.rvMyPosts.setAdapter(myPostsAdapter);
         binding.rvMyPosts.setNestedScrollingEnabled(false);
+        binding.rvMyPosts.setHasFixedSize(false);
 
         joinedStudyAdapter = new MyStudyAdapter(post -> {
             Intent intent = new Intent(requireContext(), StudyDetailActivity.class);
             intent.putExtra("postId", post.getPostId());
             startActivity(intent);
         });
-        binding.rvJoinedStudies.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvJoinedStudies.setLayoutManager(createExpandedLayoutManager());
         binding.rvJoinedStudies.setAdapter(joinedStudyAdapter);
         binding.rvJoinedStudies.setNestedScrollingEnabled(false);
+        binding.rvJoinedStudies.setHasFixedSize(false);
+    }
+
+    private LinearLayoutManager createExpandedLayoutManager() {
+        return new LinearLayoutManager(requireContext()) {
+            @Override
+            public boolean canScrollVertically() {
+                return false;
+            }
+        };
     }
 
     private void loadUserProfile() {
@@ -141,108 +155,118 @@ public class MyPageFragment extends Fragment {
                 });
     }
 
-    private void loadJoinedStudies() {
+    private void startJoinedStudiesListener() {
         String uid = FirebaseUtil.getCurrentUid();
         if (uid == null || uid.trim().isEmpty()) {
+            stopJoinedStudiesListener();
+            binding.tvJoinedCount.setText("0");
+            joinedStudyAdapter.submitList(new ArrayList<>());
+            binding.tvJoinedEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        // 동일 사용자에 대한 리스너가 이미 연결되어 있으면 재등록하지 않는다.
+        if (joinedStudiesRegistration != null && uid.equals(joinedStudiesUid)) {
+            return;
+        }
+        stopJoinedStudiesListener();
+        joinedStudiesUid = uid;
+        joinedStudiesRegistration = FirebaseUtil.getUsersRef()
+                .document(uid)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (binding == null) {
+                        return;
+                    }
+                    if (e != null) {
+                        Log.e(TAG, "참여 중 유저 정보 실시간 조회 실패", e);
+                        Toast.makeText(requireContext(), "참여 중인 스터디를 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (snapshot == null || !snapshot.exists()) {
+                        joinedStudyAdapter.submitList(new ArrayList<>());
+                        binding.tvJoinedCount.setText("0");
+                        binding.tvJoinedEmpty.setVisibility(View.VISIBLE);
+                        return;
+                    }
+
+                    User user = snapshot.toObject(User.class);
+                    List<String> joinedStudyIds = user != null && user.getJoinedStudyIds() != null
+                            ? user.getJoinedStudyIds()
+                            : new ArrayList<>();
+                    loadJoinedStudiesByIds(uid, joinedStudyIds, ++joinedStudiesLoadToken);
+                });
+    }
+
+    private void loadJoinedStudiesByIds(String uid, List<String> joinedStudyIds, int requestToken) {
+        if (binding == null) {
+            return;
+        }
+
+        LinkedHashSet<String> uniqueIds = new LinkedHashSet<>();
+        for (String studyId : joinedStudyIds) {
+            if (studyId == null || studyId.trim().isEmpty()) {
+                continue;
+            }
+            uniqueIds.add(studyId);
+        }
+
+        if (uniqueIds.isEmpty()) {
+            joinedStudyAdapter.submitList(new ArrayList<>());
             binding.tvJoinedCount.setText("0");
             binding.tvJoinedEmpty.setVisibility(View.VISIBLE);
             return;
         }
 
-        var memberQueryTask = FirebaseUtil.getStudyPostsRef()
-                .whereArrayContains("memberUids", uid)
-                .get();
-        var userDocTask = FirebaseUtil.getUsersRef().document(uid).get();
-
-        Tasks.whenAllComplete(memberQueryTask, userDocTask)
-                .addOnSuccessListener(results -> {
-                    if (binding == null) {
-                        return;
-                    }
-
-                    Map<String, StudyPost> mergedPosts = new LinkedHashMap<>();
-
-                    if (memberQueryTask.isSuccessful() && memberQueryTask.getResult() != null) {
-                        var memberSnapshots = memberQueryTask.getResult();
-                        for (var doc : memberSnapshots) {
-                            StudyPost post = doc.toObject(StudyPost.class);
-                            post.setPostId(doc.getId());
-                            mergedPosts.put(doc.getId(), post);
-                        }
-                    } else if (memberQueryTask.getException() != null) {
-                        Log.e(TAG, "memberUids 기반 스터디 조회 실패", memberQueryTask.getException());
-                    }
-
-                    List<String> joinedStudyIds = new ArrayList<>();
-                    if (userDocTask.isSuccessful() && userDocTask.getResult() != null) {
-                        User user = userDocTask.getResult().toObject(User.class);
-                        joinedStudyIds = user != null && user.getJoinedStudyIds() != null
-                                ? user.getJoinedStudyIds()
-                                : new ArrayList<>();
-                    } else if (userDocTask.getException() != null) {
-                        Log.e(TAG, "유저 문서 기반 joinedStudyIds 조회 실패", userDocTask.getException());
-                    }
-
-                    loadJoinedStudiesByIds(joinedStudyIds, mergedPosts);
-                });
-    }
-
-    private void loadJoinedStudiesByIds(List<String> joinedStudyIds, Map<String, StudyPost> mergedPosts) {
-        List<com.google.android.gms.tasks.Task<com.google.firebase.firestore.DocumentSnapshot>> tasks = new ArrayList<>();
-        for (String studyId : joinedStudyIds) {
-            if (studyId == null || studyId.trim().isEmpty() || mergedPosts.containsKey(studyId)) {
-                continue;
-            }
+        List<Task<com.google.firebase.firestore.DocumentSnapshot>> tasks = new ArrayList<>();
+        for (String studyId : uniqueIds) {
             tasks.add(FirebaseUtil.getStudyPostsRef().document(studyId).get());
         }
 
-        if (tasks.isEmpty()) {
-            renderJoinedStudies(mergedPosts);
-            return;
-        }
+        Tasks.whenAllComplete(tasks).addOnSuccessListener(results -> {
+            if (binding == null || requestToken != joinedStudiesLoadToken) {
+                return;
+            }
 
-        Tasks.whenAllComplete(tasks)
-                .addOnSuccessListener(results -> {
-                    for (Task<?> task : results) {
-                        if (!task.isSuccessful() || task.getResult() == null) {
-                            if (task.getException() != null) {
-                                Log.e(TAG, "joinedStudyIds 단건 로드 실패", task.getException());
-                            }
-                            continue;
-                        }
+            List<StudyPost> posts = new ArrayList<>();
+            for (Task<?> task : results) {
+                if (!task.isSuccessful() || task.getResult() == null) {
+                    continue;
+                }
+                var doc = (com.google.firebase.firestore.DocumentSnapshot) task.getResult();
+                if (!doc.exists()) {
+                    continue;
+                }
 
-                        var doc = (com.google.firebase.firestore.DocumentSnapshot) task.getResult();
-                        if (!doc.exists()) {
-                            continue;
-                        }
+                StudyPost post = doc.toObject(StudyPost.class);
+                if (post == null) {
+                    continue;
+                }
+                // 보정: joinedStudyIds에 남아 있어도 실제 멤버가 아니면 제외
+                if (!post.getMemberUids().contains(uid)) {
+                    continue;
+                }
+                post.setPostId(doc.getId());
+                posts.add(post);
+            }
 
-                        StudyPost post = doc.toObject(StudyPost.class);
-                        if (post == null) {
-                            continue;
-                        }
-                        String uid = FirebaseUtil.getCurrentUid();
-                        if (uid == null || !post.getMemberUids().contains(uid)) {
-                            continue;
-                        }
-                        post.setPostId(doc.getId());
-                        mergedPosts.put(doc.getId(), post);
-                    }
-                    renderJoinedStudies(mergedPosts);
-                });
+            posts.sort((a, b) -> {
+                if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            });
+            joinedStudyAdapter.submitList(posts);
+            binding.tvJoinedCount.setText(String.valueOf(posts.size()));
+            binding.tvJoinedEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+        });
     }
 
-    private void renderJoinedStudies(Map<String, StudyPost> mergedPosts) {
-        if (binding == null) {
-            return;
+    private void stopJoinedStudiesListener() {
+        if (joinedStudiesRegistration != null) {
+            joinedStudiesRegistration.remove();
+            joinedStudiesRegistration = null;
         }
-        List<StudyPost> posts = new ArrayList<>(mergedPosts.values());
-        posts.sort((a, b) -> {
-            if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
-            return b.getCreatedAt().compareTo(a.getCreatedAt());
-        });
-        joinedStudyAdapter.submitList(posts);
-        binding.tvJoinedCount.setText(String.valueOf(posts.size()));
-        binding.tvJoinedEmpty.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+        joinedStudiesUid = null;
+        joinedStudiesLoadToken++;
     }
 
     private void confirmLogout() {
@@ -262,6 +286,7 @@ public class MyPageFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        stopJoinedStudiesListener();
         super.onDestroyView();
         binding = null;
     }

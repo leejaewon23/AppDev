@@ -105,7 +105,7 @@
             android:background="@drawable/bg_empty_state"
             android:gravity="center"
             android:padding="24dp"
-            android:text="선택한 날짜의 일정이 없습니다"
+            android:text="@string/calendar_empty_selected_date"
             android:textColor="@color/text_secondary"
             android:visibility="gone" />
 
@@ -123,6 +123,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="20dp"
+        android:contentDescription="@string/calendar_fab_add_description"
         android:src="@android:drawable/ic_input_add"
         app:backgroundTint="@color/primary"
         app:tint="@android:color/white" />

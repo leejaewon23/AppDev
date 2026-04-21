@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import kr.ac.mjc.myappdev.R;
 import kr.ac.mjc.myappdev.databinding.DialogScheduleEditorBinding;
 import kr.ac.mjc.myappdev.databinding.FragmentCalendarBinding;
 import kr.ac.mjc.myappdev.model.StudyPost;
@@ -187,7 +188,7 @@ public class CalendarFragment extends Fragment {
                 })
                 .addOnFailureListener(e -> {
                     binding.progressBar.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), "일정을 불러오지 못했습니다", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.calendar_schedule_load_failed), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -210,7 +211,7 @@ public class CalendarFragment extends Fragment {
 
     private void showScheduleEditor(@Nullable StudySchedule existing) {
         if (manageableStudies.isEmpty()) {
-            Toast.makeText(requireContext(), "일정을 관리할 스터디가 없습니다", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.calendar_no_manageable_studies), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -246,23 +247,32 @@ public class CalendarFragment extends Fragment {
                 updateDateTimePreview(dialogBinding.tvDateTimeValue, millis)));
 
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setTitle(existing == null ? "일정 추가" : "일정 수정")
+                .setTitle(existing == null ? getString(R.string.calendar_dialog_add_title) : getString(R.string.calendar_dialog_edit_title))
                 .setView(dialogBinding.getRoot())
-                .setPositiveButton(existing == null ? "등록" : "저장", null)
-                .setNegativeButton("취소", null)
+                .setPositiveButton(existing == null ? getString(R.string.calendar_dialog_positive_add) : getString(R.string.calendar_dialog_positive_save), null)
+                .setNegativeButton(getString(R.string.common_cancel), null)
                 .create();
 
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String title = dialogBinding.etTitle.getText().toString().trim();
-            String description = dialogBinding.etDescription.getText().toString().trim();
-            if (TextUtils.isEmpty(title)) {
-                dialogBinding.etTitle.setError("일정 제목을 입력하세요");
-                return;
-            }
+        dialog.setOnShowListener(d -> {
+            View positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String title = dialogBinding.etTitle.getText().toString().trim();
+                String description = dialogBinding.etDescription.getText().toString().trim();
+                dialogBinding.etTitle.setError(null);
+                if (TextUtils.isEmpty(title)) {
+                    dialogBinding.etTitle.setError(getString(R.string.calendar_title_required));
+                    return;
+                }
+                if (existing == null && scheduledAtMillis[0] < System.currentTimeMillis()) {
+                    Toast.makeText(requireContext(), getString(R.string.calendar_time_past_not_allowed), Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-            StudyPost selectedStudy = manageableList.get(spinner.getSelectedItemPosition());
-            saveSchedule(existing, selectedStudy, title, description, scheduledAtMillis[0], dialog);
-        }));
+                StudyPost selectedStudy = manageableList.get(spinner.getSelectedItemPosition());
+                setEditorSubmittingState(dialogBinding, dialog, spinner, existing == null, true);
+                saveSchedule(existing, selectedStudy, title, description, scheduledAtMillis[0], dialog, dialogBinding, spinner);
+            });
+        });
 
         dialog.show();
     }
@@ -306,9 +316,13 @@ public class CalendarFragment extends Fragment {
                               String title,
                               String description,
                               long scheduledAtMillis,
-                              AlertDialog dialog) {
+                              AlertDialog dialog,
+                              DialogScheduleEditorBinding dialogBinding,
+                              Spinner spinner) {
         String uid = FirebaseUtil.getCurrentUid();
         if (uid == null || uid.trim().isEmpty()) {
+            setEditorSubmittingState(dialogBinding, dialog, spinner, existing == null, false);
+            Toast.makeText(requireContext(), getString(R.string.calendar_auth_required), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -327,11 +341,13 @@ public class CalendarFragment extends Fragment {
                     .add(payload)
                     .addOnSuccessListener(ref -> {
                         dialog.dismiss();
-                        Toast.makeText(requireContext(), "일정을 등록했습니다", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), getString(R.string.calendar_schedule_added), Toast.LENGTH_SHORT).show();
                         loadStudiesAndSchedules();
                     })
-                    .addOnFailureListener(e ->
-                            Toast.makeText(requireContext(), "일정 등록에 실패했습니다", Toast.LENGTH_SHORT).show());
+                    .addOnFailureListener(e -> {
+                        setEditorSubmittingState(dialogBinding, dialog, spinner, true, false);
+                        Toast.makeText(requireContext(), getString(R.string.calendar_schedule_add_failed), Toast.LENGTH_SHORT).show();
+                    });
             return;
         }
 
@@ -340,19 +356,21 @@ public class CalendarFragment extends Fragment {
                 .update(payload)
                 .addOnSuccessListener(v -> {
                     dialog.dismiss();
-                    Toast.makeText(requireContext(), "일정을 수정했습니다", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.calendar_schedule_updated), Toast.LENGTH_SHORT).show();
                     loadStudiesAndSchedules();
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(requireContext(), "일정 수정에 실패했습니다", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    setEditorSubmittingState(dialogBinding, dialog, spinner, false, false);
+                    Toast.makeText(requireContext(), getString(R.string.calendar_schedule_update_failed), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void confirmDelete(StudySchedule schedule) {
         new AlertDialog.Builder(requireContext())
-                .setTitle("일정 삭제")
-                .setMessage("이 일정을 삭제하시겠습니까?")
-                .setPositiveButton("삭제", (dialog, w) -> deleteSchedule(schedule))
-                .setNegativeButton("취소", null)
+                .setTitle(getString(R.string.calendar_delete_title))
+                .setMessage(getString(R.string.calendar_delete_message))
+                .setPositiveButton(getString(R.string.common_delete), (dialog, w) -> deleteSchedule(schedule))
+                .setNegativeButton(getString(R.string.common_cancel), null)
                 .show();
     }
 
@@ -361,11 +379,24 @@ public class CalendarFragment extends Fragment {
                 .document(schedule.getScheduleId())
                 .delete()
                 .addOnSuccessListener(v -> {
-                    Toast.makeText(requireContext(), "일정을 삭제했습니다", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.calendar_schedule_deleted), Toast.LENGTH_SHORT).show();
                     loadStudiesAndSchedules();
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(requireContext(), "일정 삭제에 실패했습니다", Toast.LENGTH_SHORT).show());
+                        Toast.makeText(requireContext(), getString(R.string.calendar_schedule_delete_failed), Toast.LENGTH_SHORT).show());
+    }
+
+    private void setEditorSubmittingState(DialogScheduleEditorBinding dialogBinding,
+                                          AlertDialog dialog,
+                                          Spinner spinner,
+                                          boolean allowStudySelection,
+                                          boolean isSubmitting) {
+        dialogBinding.etTitle.setEnabled(!isSubmitting);
+        dialogBinding.etDescription.setEnabled(!isSubmitting);
+        dialogBinding.btnPickDateTime.setEnabled(!isSubmitting);
+        spinner.setEnabled(!isSubmitting && allowStudySelection);
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(!isSubmitting);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(!isSubmitting);
     }
 
     private void updateDateTimePreview(TextView target, long millis) {

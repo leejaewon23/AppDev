@@ -19,7 +19,9 @@
 
     <!-- Warning / Danger -->
     <color name="warning">#E39A2D</color>
+    <color name="warning_light">#FFF5E6</color>
     <color name="danger">#C24646</color>
+    <color name="danger_light">#FCEBEC</color>
 
     <!-- Legacy aliases (for gradual migration) -->
     <color name="secondary">#1F9E82</color>

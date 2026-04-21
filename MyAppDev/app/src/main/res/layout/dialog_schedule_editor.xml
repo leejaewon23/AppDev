@@ -12,7 +12,8 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="스터디"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
+        android:text="@string/calendar_study_label"
         android:textColor="@color/on_surface"
         android:textStyle="bold" />
 
@@ -20,6 +21,7 @@
         android:id="@+id/spinnerStudy"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
         android:layout_marginTop="6dp"
         android:background="@drawable/bg_filter_shell"
         android:paddingHorizontal="10dp"
@@ -28,8 +30,9 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
         android:layout_marginTop="14dp"
-        android:hint="일정 제목"
+        android:hint="@string/calendar_hint_title"
         app:boxBackgroundColor="@color/surface"
         app:boxBackgroundMode="filled"
         app:boxCornerRadiusBottomEnd="14dp"
@@ -42,14 +45,16 @@
             android:id="@+id/etTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:maxLength="40"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
         android:layout_marginTop="10dp"
-        android:hint="설명 (선택)"
+        android:hint="@string/calendar_hint_description_optional"
         app:boxBackgroundColor="@color/surface"
         app:boxBackgroundMode="filled"
         app:boxCornerRadiusBottomEnd="14dp"
@@ -68,8 +73,9 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
         android:layout_marginTop="14dp"
-        android:text="일시"
+        android:text="@string/calendar_datetime_label"
         android:textColor="@color/on_surface"
         android:textStyle="bold" />
 
@@ -77,6 +83,7 @@
         android:id="@+id/tvDateTimeValue"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
         android:layout_marginTop="8dp"
         android:background="@drawable/bg_chip"
         android:paddingHorizontal="12dp"
@@ -89,7 +96,8 @@
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/schedule_editor_section_inset"
         android:layout_marginTop="10dp"
-        android:text="날짜/시간 선택" />
+        android:text="@string/calendar_pick_datetime" />
 
 </LinearLayout>

@@ -92,7 +92,7 @@ public class StudyMemberAdapter extends RecyclerView.Adapter<StudyMemberAdapter.
 
         void bind(MemberItem memberItem, boolean canKickMembers, OnKickClickListener listener) {
             tvMemberName.setText(memberItem.getNickname());
-            tvMemberMeta.setText(memberItem.isAuthor() ? "스터디장" : memberItem.getUid());
+            tvMemberMeta.setText(memberItem.isAuthor() ? "스터디장" : "참여자");
 
             boolean showKickButton = canKickMembers && !memberItem.isAuthor();
             btnKick.setVisibility(showKickButton ? View.VISIBLE : View.GONE);
