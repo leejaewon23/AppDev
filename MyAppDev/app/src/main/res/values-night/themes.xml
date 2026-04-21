@@ -1,7 +1,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.MyAppDev" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/primary_light</item>
+        <item name="colorOnPrimaryContainer">@color/primary</item>
+        <item name="colorSecondary">@color/accent_green</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="materialCardViewStyle">@style/Widget.MyAppDev.MaterialCardView</item>
     </style>
 </resources>

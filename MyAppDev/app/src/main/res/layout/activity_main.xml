@@ -22,6 +22,7 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         app:menu="@menu/bottom_nav_menu"
+        app:itemBackground="@drawable/bg_bottom_nav_item"
         app:itemIconTint="@color/bottom_nav_item_tint"
         app:itemTextColor="@color/bottom_nav_item_tint"
         app:labelVisibilityMode="labeled"/>

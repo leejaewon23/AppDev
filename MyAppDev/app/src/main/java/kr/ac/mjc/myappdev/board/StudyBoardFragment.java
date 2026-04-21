@@ -78,7 +78,8 @@ public class StudyBoardFragment extends Fragment {
         });
         binding.rvStudyPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvStudyPosts.setAdapter(adapter);
-        binding.rvStudyPosts.setHasFixedSize(true);
+        binding.rvStudyPosts.setHasFixedSize(false);
+        binding.rvStudyPosts.setNestedScrollingEnabled(false);
         binding.rvStudyPosts.setItemViewCacheSize(12);
         binding.rvStudyPosts.setOverScrollMode(View.OVER_SCROLL_NEVER);
         binding.rvStudyPosts.setLayoutAnimation(
@@ -240,9 +241,6 @@ public class StudyBoardFragment extends Fragment {
         }
 
         adapter.submitList(filteredPosts);
-        if (!filteredPosts.isEmpty()) {
-            binding.rvStudyPosts.scheduleLayoutAnimation();
-        }
         binding.tvEmpty.setVisibility(filteredPosts.isEmpty() ? View.VISIBLE : View.GONE);
         syncQuickChips();
         updateFilterSummary(filteredPosts.size());

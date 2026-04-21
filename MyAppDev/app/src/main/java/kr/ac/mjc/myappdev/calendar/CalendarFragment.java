@@ -15,11 +15,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.android.material.chip.Chip;
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
@@ -49,6 +51,7 @@ public class CalendarFragment extends Fragment {
     private final List<StudySchedule> allSchedules = new ArrayList<>();
     private final Map<String, StudyPost> memberStudies = new LinkedHashMap<>();
     private final Map<String, StudyPost> manageableStudies = new LinkedHashMap<>();
+    private final Set<Long> scheduleDayKeys = new LinkedHashSet<>();
 
     private final Calendar selectedDate = Calendar.getInstance();
 
@@ -67,9 +70,11 @@ public class CalendarFragment extends Fragment {
         selectedDate.setTimeInMillis(normalizeToDay(System.currentTimeMillis()));
         setupList();
         setupCalendar();
+        setupScrollMotion();
         binding.btnAddSchedule.setOnClickListener(v -> showScheduleEditor(null));
         updateCurrentMonthLabel();
         updateSelectedDateLabel();
+        renderMarkedDatesOfSelectedMonth();
         loadStudiesAndSchedules();
     }
 
@@ -86,6 +91,12 @@ public class CalendarFragment extends Fragment {
             }
         });
         binding.rvSchedules.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvSchedules.setNestedScrollingEnabled(false);
+        binding.rvSchedules.setHasFixedSize(false);
+        binding.rvSchedules.setItemViewCacheSize(12);
+        if (binding.rvSchedules.getItemAnimator() != null) {
+            binding.rvSchedules.getItemAnimator().setChangeDuration(120);
+        }
         binding.rvSchedules.setAdapter(adapter);
     }
 
@@ -101,8 +112,25 @@ public class CalendarFragment extends Fragment {
             selectedDate.set(Calendar.MILLISECOND, 0);
             updateCurrentMonthLabel();
             updateSelectedDateLabel();
+            renderMarkedDatesOfSelectedMonth();
             renderSelectedDaySchedules();
         });
+    }
+
+    private void setupScrollMotion() {
+        final float maxHeroShift = getResources().getDimension(R.dimen.calendar_hero_parallax_distance);
+        final float fadeDistance = getResources().getDimension(R.dimen.calendar_hero_fade_distance);
+
+        NestedScrollView.OnScrollChangeListener listener = (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            float progress = fadeDistance <= 0f ? 0f : Math.min(1f, scrollY / fadeDistance);
+            float heroShift = Math.min(maxHeroShift, scrollY * 0.35f);
+            float calendarShift = Math.min(maxHeroShift * 0.5f, scrollY * 0.14f);
+
+            binding.cardHero.setTranslationY(-heroShift);
+            binding.cardHero.setAlpha(1f - (0.18f * progress));
+            binding.cardMonthCalendar.setTranslationY(-calendarShift);
+        };
+        binding.nestedScrollCalendar.setOnScrollChangeListener(listener);
     }
 
     private void updateCurrentMonthLabel() {
@@ -150,7 +178,9 @@ public class CalendarFragment extends Fragment {
                     binding.btnAddSchedule.setEnabled(!manageableStudies.isEmpty());
                     if (scheduleTasks.isEmpty()) {
                         allSchedules.clear();
+                        refreshScheduleDayKeys();
                         binding.progressBar.setVisibility(View.GONE);
+                        renderMarkedDatesOfSelectedMonth();
                         renderSelectedDaySchedules();
                         return;
                     }
@@ -182,14 +212,72 @@ public class CalendarFragment extends Fragment {
                                 }
                                 allSchedules.sort(Comparator.comparing(StudySchedule::getScheduledAt,
                                         Comparator.nullsLast(Comparator.naturalOrder())));
+                                refreshScheduleDayKeys();
                                 binding.progressBar.setVisibility(View.GONE);
+                                renderMarkedDatesOfSelectedMonth();
                                 renderSelectedDaySchedules();
                             });
                 })
                 .addOnFailureListener(e -> {
+                    refreshScheduleDayKeys();
                     binding.progressBar.setVisibility(View.GONE);
+                    renderMarkedDatesOfSelectedMonth();
                     Toast.makeText(requireContext(), getString(R.string.calendar_schedule_load_failed), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void refreshScheduleDayKeys() {
+        scheduleDayKeys.clear();
+        for (StudySchedule schedule : allSchedules) {
+            if (schedule.getScheduledAt() == null) {
+                continue;
+            }
+            scheduleDayKeys.add(normalizeToDay(schedule.getScheduledAt().toDate().getTime()));
+        }
+    }
+
+    private void renderMarkedDatesOfSelectedMonth() {
+        if (binding == null) {
+            return;
+        }
+
+        List<Integer> markedDays = new ArrayList<>();
+        for (Long dayKey : scheduleDayKeys) {
+            Calendar date = Calendar.getInstance();
+            date.setTimeInMillis(dayKey);
+            if (date.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR)
+                    && date.get(Calendar.MONTH) == selectedDate.get(Calendar.MONTH)) {
+                markedDays.add(date.get(Calendar.DAY_OF_MONTH));
+            }
+        }
+        markedDays.sort(Integer::compareTo);
+
+        binding.chipGroupMarkedDates.removeAllViews();
+        if (markedDays.isEmpty()) {
+            binding.tvMarkedDatesEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        binding.tvMarkedDatesEmpty.setVisibility(View.GONE);
+        for (Integer day : markedDays) {
+            Chip chip = new Chip(requireContext());
+            chip.setText(day + "일");
+            chip.setCheckable(false);
+            chip.setClickable(true);
+            chip.setChipBackgroundColorResource(R.color.success_light);
+            chip.setTextColor(requireContext().getColor(R.color.secondary_dark));
+            chip.setOnClickListener(v -> {
+                selectedDate.set(Calendar.DAY_OF_MONTH, day);
+                selectedDate.set(Calendar.HOUR_OF_DAY, 0);
+                selectedDate.set(Calendar.MINUTE, 0);
+                selectedDate.set(Calendar.SECOND, 0);
+                selectedDate.set(Calendar.MILLISECOND, 0);
+                binding.calendarView.setDate(selectedDate.getTimeInMillis(), true, true);
+                updateSelectedDateLabel();
+                renderSelectedDaySchedules();
+            });
+            binding.chipGroupMarkedDates.addView(chip);
+        }
     }
 
     private void renderSelectedDaySchedules() {

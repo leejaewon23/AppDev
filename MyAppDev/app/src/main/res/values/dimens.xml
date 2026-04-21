@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="schedule_editor_section_inset">10dp</dimen>
+    <dimen name="calendar_hero_parallax_distance">30dp</dimen>
+    <dimen name="calendar_hero_fade_distance">180dp</dimen>
 </resources>

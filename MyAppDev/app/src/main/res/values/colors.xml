@@ -3,19 +3,27 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+    <!-- Warm Scholar base -->
+    <color name="bg">#F5F3EE</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="primary">#1A1A2E</color>
+    <color name="accent_indigo">#6366F1</color>
+    <color name="accent_green">#4ADE80</color>
+    <color name="border">#E8E4DC</color>
+    <color name="text_muted">#8B8B8B</color>
+
     <!-- Primary -->
-    <color name="primary">#16324F</color>
-    <color name="primary_dark">#10253A</color>
-    <color name="primary_mid">#1F4B73</color>
-    <color name="primary_light">#EAF2F8</color>
+    <color name="primary_dark">#121225</color>
+    <color name="primary_mid">#2D3561</color>
+    <color name="primary_light">#EEF2FF</color>
 
     <!-- Success -->
-    <color name="success">#1F9E82</color>
-    <color name="success_light">#E8F7F3</color>
+    <color name="success">#2EA35A</color>
+    <color name="success_light">#EAFBF0</color>
 
     <!-- Info -->
-    <color name="info">#2F6FED</color>
-    <color name="info_light">#EAF0FF</color>
+    <color name="info">#4F46E5</color>
+    <color name="info_light">#EEF2FF</color>
 
     <!-- Warning / Danger -->
     <color name="warning">#E39A2D</color>
@@ -24,22 +32,21 @@
     <color name="danger_light">#FCEBEC</color>
 
     <!-- Legacy aliases (for gradual migration) -->
-    <color name="secondary">#1F9E82</color>
-    <color name="secondary_dark">#187D67</color>
+    <color name="secondary">#4ADE80</color>
+    <color name="secondary_dark">#2EA35A</color>
     <color name="accent_coral">#FF8F70</color>
 
     <!-- Status -->
-    <color name="recruiting">#1F9E82</color>
-    <color name="done">#7E8A98</color>
+    <color name="recruiting">#22A156</color>
+    <color name="done">#8E919A</color>
 
     <!-- Neutral -->
-    <color name="surface">#F4F6F8</color>
     <color name="surface_card">#FFFFFF</color>
-    <color name="surface_soft">#EEF2F6</color>
-    <color name="on_surface">#132238</color>
-    <color name="text_secondary">#4C5A6A</color>
-    <color name="text_meta">#7E8A98</color>
-    <color name="line_soft">#D9E0E8</color>
-    <color name="nav_inactive">#7E8A98</color>
-    <color name="nav_active_bg">#EAF0FF</color>
+    <color name="surface_soft">#F8F6F1</color>
+    <color name="on_surface">#1F1F2B</color>
+    <color name="text_secondary">#6A6A73</color>
+    <color name="text_meta">#8B8B8B</color>
+    <color name="line_soft">#E8E4DC</color>
+    <color name="nav_inactive">#8B8B8B</color>
+    <color name="nav_active_bg">#EEF2FF</color>
 </resources>
