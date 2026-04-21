@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">스터디 매칭</string>
+    <string name="app_name">스터디허브</string>
     <string name="btn_join">참여 신청</string>
     <string name="chat_notice_label">스터디 공지</string>
     <string name="chat_notice_edit">공지 수정</string>

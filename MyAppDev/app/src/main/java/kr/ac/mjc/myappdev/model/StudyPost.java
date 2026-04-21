@@ -9,6 +9,8 @@ public class StudyPost {
     private String authorUid;
     private String authorNickname;
     private String title;
+    // Backward compatibility for legacy documents that used "studyName".
+    private String studyName;
     private String description;
     private String field;         // 분야 (예: 코딩, 취업, 영어, 자격증 등)
     private String location;      // 지역 (예: 서울, 경기, 온라인 등)
@@ -53,8 +55,24 @@ public class StudyPost {
     public String getAuthorNickname() { return authorNickname; }
     public void setAuthorNickname(String authorNickname) { this.authorNickname = authorNickname; }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public String getTitle() {
+        if (title != null && !title.trim().isEmpty()) {
+            return title;
+        }
+        return studyName;
+    }
+    public void setTitle(String title) {
+        this.title = title;
+        this.studyName = title;
+    }
+
+    public String getStudyName() { return studyName; }
+    public void setStudyName(String studyName) {
+        this.studyName = studyName;
+        if (this.title == null || this.title.trim().isEmpty()) {
+            this.title = studyName;
+        }
+    }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

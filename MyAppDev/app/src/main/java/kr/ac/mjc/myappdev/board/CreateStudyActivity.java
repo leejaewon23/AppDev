@@ -162,6 +162,7 @@ public class CreateStudyActivity extends AppCompatActivity {
         // 보안: 본인 게시글만 수정 가능 — Firestore Security Rules로 이중 검증
         Map<String, Object> updates = new HashMap<>();
         updates.put("title", title);
+        updates.put("studyName", title);
         updates.put("description", description);
         updates.put("field", field);
         updates.put("location", location);
