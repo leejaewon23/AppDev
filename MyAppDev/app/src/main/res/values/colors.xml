@@ -4,7 +4,7 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- Warm Scholar base -->
-    <color name="bg">#F5F3EE</color>
+    <color name="bg">#FFFFFF</color>
     <color name="surface">#FFFFFF</color>
     <color name="primary">#1A1A2E</color>
     <color name="accent_indigo">#6366F1</color>
