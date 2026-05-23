@@ -13,6 +13,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+*.zip
+*.apk
+*.aab
+/.idea/firebender/
+/.idea/shelf/
+/.idea/deviceManager.xml
+/.idea/deploymentTargetSelector.xml
+*.jks
+*.keystore
 
 # Firebase - 민감 정보 포함, 절대 커밋 금지
 google-services.json

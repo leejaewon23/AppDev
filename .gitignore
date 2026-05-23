@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Local archives and packaged build outputs
+*.zip
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Android / Gradle generated files
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Firebase / Google service credentials
+google-services.json
+
+# Android Studio / IntelliJ local state
+*.iml
+**/.idea/caches/
+**/.idea/workspace.xml
+**/.idea/shelf/
+**/.idea/firebender/
+**/.idea/deviceManager.xml
+**/.idea/deploymentTargetSelector.xml
+
+# Agent and tool local settings
+**/.claude/settings.local.json

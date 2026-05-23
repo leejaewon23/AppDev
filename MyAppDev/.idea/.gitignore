@@ -1,3 +1,7 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+/caches/
+/firebender/
+/deviceManager.xml
+/deploymentTargetSelector.xml
